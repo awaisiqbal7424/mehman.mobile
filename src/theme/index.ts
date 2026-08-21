@@ -95,29 +95,41 @@ export const spacing = {
   '5xl': 56,
 } as const;
 
+/**
+ * Corner radii.
+ *
+ * Softer than they were: the current platform direction (iOS 26 and Material's
+ * expressive update alike) rounds everything harder, and the two things people
+ * touch most — fields and the tab bar — go fully pill. A pill reads as "this is
+ * a control" without needing a border to say so.
+ */
 export const radius = {
-  sm: 8,
-  md: 12,
-  lg: 16,
-  xl: 20,
-  '2xl': 28,
+  sm: 10,
+  md: 14,
+  lg: 18,
+  xl: 24,
+  '2xl': 32,
   full: 999,
 } as const;
 
 /**
- * Type scale. `display` and `title` use tight tracking so large text does not
- * look airy; body text stays at default tracking for readability.
+ * Type scale, sized to the current iOS metrics: 17pt primary text, 15pt
+ * secondary, 34pt page titles, 11pt tab labels.
+ *
+ * The old scale started at 15pt for body, which is a *web* body size — on a
+ * phone held at arm's length it reads as fine print. Large sizes carry tight
+ * tracking so they do not look airy; body stays at default tracking.
  */
 export const type = {
-  display: { fontSize: 32, lineHeight: 38, fontWeight: '700' as const, letterSpacing: -0.6 },
-  title: { fontSize: 24, lineHeight: 30, fontWeight: '700' as const, letterSpacing: -0.4 },
-  heading: { fontSize: 19, lineHeight: 25, fontWeight: '700' as const, letterSpacing: -0.2 },
-  subheading: { fontSize: 16, lineHeight: 22, fontWeight: '600' as const },
-  body: { fontSize: 15, lineHeight: 22, fontWeight: '400' as const },
-  bodyStrong: { fontSize: 15, lineHeight: 22, fontWeight: '600' as const },
-  small: { fontSize: 13, lineHeight: 18, fontWeight: '400' as const },
-  smallStrong: { fontSize: 13, lineHeight: 18, fontWeight: '600' as const },
-  caption: { fontSize: 11, lineHeight: 15, fontWeight: '600' as const, letterSpacing: 0.3 },
+  display: { fontSize: 34, lineHeight: 41, fontWeight: '700' as const, letterSpacing: -0.8 },
+  title: { fontSize: 26, lineHeight: 32, fontWeight: '700' as const, letterSpacing: -0.5 },
+  heading: { fontSize: 20, lineHeight: 26, fontWeight: '700' as const, letterSpacing: -0.3 },
+  subheading: { fontSize: 17, lineHeight: 23, fontWeight: '600' as const, letterSpacing: -0.2 },
+  body: { fontSize: 17, lineHeight: 24, fontWeight: '400' as const },
+  bodyStrong: { fontSize: 17, lineHeight: 24, fontWeight: '600' as const },
+  small: { fontSize: 15, lineHeight: 21, fontWeight: '400' as const },
+  smallStrong: { fontSize: 15, lineHeight: 21, fontWeight: '600' as const },
+  caption: { fontSize: 12, lineHeight: 16, fontWeight: '600' as const, letterSpacing: 0.4 },
 } as const;
 
 /**
@@ -146,6 +158,23 @@ export const shadow = {
 /** Anything tappable is at least this tall. Below 44pt, taps start missing. */
 export const HIT_SLOP = { top: 8, bottom: 8, left: 8, right: 8 };
 export const MIN_TAP = 44;
+
+/**
+ * The floating tab bar.
+ *
+ * It is a pill inset from all three edges rather than a full-width slab, so
+ * content runs under it and the app reads as one card floating on the warm
+ * ground. `SPACE` is what a scrolling screen must add to its bottom padding to
+ * clear the pill — `Screen` applies it automatically inside a tab navigator.
+ */
+export const TAB_BAR = {
+  HEIGHT: 64,
+  /** Inset from the left, right and bottom edges. */
+  INSET: 16,
+  get SPACE() {
+    return this.HEIGHT + this.INSET + spacing.md;
+  },
+} as const;
 
 export const theme = { colors, palette, spacing, radius, type, shadow };
 export default theme;

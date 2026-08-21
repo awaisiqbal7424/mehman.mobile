@@ -8,6 +8,7 @@ import { packageApi, type PackageSearchParams } from '../../src/api/services';
 import { PackageCard } from '../../src/components/PackageCard';
 import {
   Button, CardSkeleton, Chip, EmptyState, ErrorState, Input, Sheet, SheetOption, Text,
+  useTabBarSpace,
 } from '../../src/components/ui';
 import { colors, radius, spacing, type as typeScale } from '../../src/theme';
 import type { ProviderPackage } from '../../src/types';
@@ -34,6 +35,9 @@ const SORTS: { value: string; label: string; description: string }[] = [
 export default function SearchScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
+  // This screen drives its own FlatList rather than `Screen`, so it has to
+  // clear the floating tab bar itself.
+  const tabSpace = useTabBarSpace();
   const params = useLocalSearchParams<{ q?: string; type?: string; sort?: string }>();
 
   const [query, setQuery] = useState(params.q ?? '');
@@ -176,7 +180,7 @@ export default function SearchScreen() {
           data={items}
           keyExtractor={(item) => item.id}
           renderItem={({ item }) => <PackageCard item={item} />}
-          contentContainerStyle={[styles.list, { paddingBottom: insets.bottom + spacing['4xl'] }]}
+          contentContainerStyle={[styles.list, { paddingBottom: insets.bottom + tabSpace + spacing.xl }]}
           ItemSeparatorComponent={() => <View style={{ height: spacing.lg }} />}
           showsVerticalScrollIndicator={false}
           keyboardDismissMode="on-drag"
@@ -298,8 +302,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: spacing.md,
     marginHorizontal: spacing.lg,
-    paddingHorizontal: spacing.lg,
-    height: 46,
+    paddingHorizontal: spacing.xl,
+    height: 50,
     backgroundColor: colors.surfaceMuted,
     borderRadius: radius.full,
   },

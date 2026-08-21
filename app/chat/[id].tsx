@@ -244,11 +244,13 @@ const styles = StyleSheet.create({
     flex: 1,
     maxHeight: 120,
     minHeight: 44,
-    paddingHorizontal: spacing.lg,
+    paddingHorizontal: spacing.xl,
     paddingTop: spacing.md,
     paddingBottom: spacing.md,
     backgroundColor: colors.surfaceMuted,
-    borderRadius: radius.xl,
+    // Pill until the message needs a second line, then it eases into a
+    // rounded rectangle rather than stretching the curve out of shape.
+    borderRadius: radius.full,
     color: colors.text,
     ...typeScale.body,
   },

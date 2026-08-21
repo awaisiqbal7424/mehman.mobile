@@ -9,6 +9,7 @@ import { KeyboardAvoidingView } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors, radius, shadow, spacing } from '../../theme';
 import { IconButton } from './Button';
+import { useTabBarSpace } from './TabBar';
 import { Text } from './Text';
 
 /**
@@ -35,7 +36,9 @@ export function Screen({
   edges?: 'bottom' | 'none';
 }) {
   const insets = useSafeAreaInsets();
-  const bottomPad = edges === 'bottom' ? Math.max(insets.bottom, spacing.lg) : 0;
+  // Non-zero only inside a tab navigator, so the last card clears the pill.
+  const tabSpace = useTabBarSpace();
+  const bottomPad = (edges === 'bottom' ? Math.max(insets.bottom, spacing.lg) : 0) + tabSpace;
 
   const body = scroll ? (
     <ScrollView

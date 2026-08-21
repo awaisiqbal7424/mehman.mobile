@@ -223,14 +223,22 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.md,
-    minHeight: MIN_TAP + 4,
-    paddingHorizontal: spacing.lg,
-    borderRadius: radius.md,
+    minHeight: MIN_TAP + 6,
+    paddingHorizontal: spacing.xl,
+    // Pill. A field shaped like a control reads as one without needing a heavy
+    // border to say so, which is what lets the border stay this light.
+    borderRadius: radius.full,
     backgroundColor: colors.surface,
     borderWidth: 1,
     borderColor: colors.border,
   },
-  fieldMultiline: { alignItems: 'flex-start', paddingVertical: spacing.sm },
+  // A pill cannot hold several lines gracefully, so multiline softens to a
+  // rounded rectangle instead of stretching the curve.
+  fieldMultiline: {
+    alignItems: 'flex-start',
+    paddingVertical: spacing.md,
+    borderRadius: radius.xl,
+  },
   fieldFocused: { borderColor: colors.primary, backgroundColor: colors.surface },
   fieldError: { borderColor: colors.danger },
   pressed: { opacity: 0.8 },

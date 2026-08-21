@@ -14,7 +14,6 @@ import { PLACEHOLDER_IMAGE } from '../../src/constants';
 import { useAuth } from '../../src/store/auth';
 import { colors, radius, shadow, spacing } from '../../src/theme';
 import type { ProviderPackage, ServiceProvider, TripDestination } from '../../src/types';
-import { LIVE_SEARCH_TABS } from '../../src/utils/packages';
 
 /**
  * Explore — the first screen of the app.
@@ -92,7 +91,7 @@ export default function ExploreScreen() {
         onPress={() => router.push('/(guest)/search')}
         style={({ pressed }) => [styles.searchBar, pressed && { opacity: 0.85 }]}
       >
-        <Ionicons name="search" size={19} color={colors.primary} />
+        <Ionicons name="search" size={20} color={colors.primary} />
         <View style={styles.flex}>
           <Text variant="bodyStrong">Search Pakistan</Text>
           <Text variant="small" tone="muted">
@@ -101,39 +100,13 @@ export default function ExploreScreen() {
         </View>
       </Pressable>
 
-      {/* ── category shortcuts ────────────────────────────────────────── */}
-      <View style={styles.categories}>
-        {LIVE_SEARCH_TABS.map((tab) => (
-          <Pressable
-            key={tab.slug}
-            accessibilityRole="button"
-            accessibilityLabel={`Browse ${tab.label}`}
-            onPress={() => router.push(`/(guest)/search?type=${tab.type}`)}
-            style={({ pressed }) => [styles.category, pressed && styles.categoryPressed]}
-          >
-            <View style={styles.categoryIcon}>
-              <Ionicons
-                name={tab.type === 'TOUR' ? 'trail-sign-outline' : 'bed-outline'}
-                size={22}
-                color={colors.primary}
-              />
-            </View>
-            <Text variant="smallStrong">{tab.label}</Text>
-          </Pressable>
-        ))}
-
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel="Build a custom trip"
-          onPress={() => router.push('/trip-builder')}
-          style={({ pressed }) => [styles.category, pressed && styles.categoryPressed]}
-        >
-          <View style={styles.categoryIcon}>
-            <Ionicons name="sparkles-outline" size={22} color={colors.primary} />
-          </View>
-          <Text variant="smallStrong">Custom</Text>
-        </Pressable>
-      </View>
+      {/*
+        There used to be a row of Tours / Stays / Custom tiles here. It went for
+        two reasons: the rails below already lead into tours and stays, each with
+        its own "See all", and the Custom tile pointed at exactly the same screen
+        as the trip-builder card further down. Two doors onto one room, plus a
+        row of icons repeating what the headings already said.
+      */}
 
       {/* ── rails ─────────────────────────────────────────────────────── */}
       <PackageRail
@@ -143,21 +116,6 @@ export default function ExploreScreen() {
         items={tours.data?.items}
         onSeeAll={() => router.push('/(guest)/search?type=TOUR')}
         emptyMessage="No tours published yet. Check back soon."
-      />
-
-      <DestinationRail
-        destinations={destinations.data}
-        loading={destinations.isLoading}
-        onPress={(destination) => router.push(`/(guest)/search?q=${encodeURIComponent(destination.name)}`)}
-      />
-
-      <PackageRail
-        title="Stay with a Mezban"
-        subtitle="Unique homes, cottages and guesthouses"
-        loading={stays.isLoading}
-        items={stays.data?.items}
-        onSeeAll={() => router.push('/(guest)/search?type=STAY')}
-        emptyMessage="No stays published yet. Check back soon."
       />
 
       {/* ── custom trip pitch ─────────────────────────────────────────── */}
@@ -190,6 +148,21 @@ export default function ExploreScreen() {
           </View>
         </View>
       </Pressable>
+
+      <DestinationRail
+        destinations={destinations.data}
+        loading={destinations.isLoading}
+        onPress={(destination) => router.push(`/(guest)/search?q=${encodeURIComponent(destination.name)}`)}
+      />
+
+      <PackageRail
+        title="Stay with a Mezban"
+        subtitle="Unique homes, cottages and guesthouses"
+        loading={stays.isLoading}
+        items={stays.data?.items}
+        onSeeAll={() => router.push('/(guest)/search?type=STAY')}
+        emptyMessage="No stays published yet. Check back soon."
+      />
 
       <PackageRail
         title="Best value"
@@ -376,32 +349,6 @@ const styles = StyleSheet.create({
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: colors.border,
     ...shadow.sm,
-  },
-
-  categories: {
-    flexDirection: 'row',
-    gap: spacing.md,
-    paddingHorizontal: spacing.lg,
-    marginBottom: spacing['2xl'],
-  },
-  category: {
-    flex: 1,
-    alignItems: 'center',
-    gap: spacing.sm,
-    paddingVertical: spacing.md,
-    backgroundColor: colors.surface,
-    borderRadius: radius.lg,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: colors.border,
-  },
-  categoryPressed: { opacity: 0.85, transform: [{ scale: 0.97 }] },
-  categoryIcon: {
-    width: 42,
-    height: 42,
-    borderRadius: radius.md,
-    backgroundColor: colors.primarySoft,
-    alignItems: 'center',
-    justifyContent: 'center',
   },
 
   rail: { paddingHorizontal: spacing.lg },

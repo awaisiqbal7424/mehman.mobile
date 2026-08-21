@@ -8,5 +8,6 @@ export {
 export { Input, SelectField, Stepper, TextArea, type InputProps } from './Input';
 export { FooterBar, Header, Notice, PageHeading, Screen } from './Screen';
 export { ConfirmSheet, Sheet, SheetOption } from './Sheet';
+export { FloatingTabBar, TabBarSpaceContext, useTabBarSpace } from './TabBar';
 export { Text, type TextProps } from './Text';
 export { ToastProvider, useToast } from './Toast';
