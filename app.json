@@ -1,0 +1,49 @@
+{
+  "expo": {
+    "name": "Mehman",
+    "slug": "mehman",
+    "scheme": "mehman",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "light",
+    "newArchEnabled": true,
+    "splash": {
+      "image": "./assets/splash-icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#EA580C"
+    },
+    "assetBundlePatterns": ["**/*"],
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "co.mehman.app",
+      "infoPlist": {
+        "NSPhotoLibraryUsageDescription": "Mehman needs access to your photos so you can upload a payment receipt or a profile picture.",
+        "NSCameraUsageDescription": "Mehman needs the camera so you can photograph a payment receipt or your listing.",
+        "ITSAppUsesNonExemptEncryption": false
+      }
+    },
+    "android": {
+      "package": "co.mehman.app",
+      "edgeToEdgeEnabled": true,
+      "adaptiveIcon": {
+        "backgroundColor": "#EA580C",
+        "foregroundImage": "./assets/android-icon-foreground.png",
+        "monochromeImage": "./assets/android-icon-monochrome.png"
+      },
+      "predictiveBackGestureEnabled": false
+    },
+    "web": { "favicon": "./assets/favicon.png", "bundler": "metro" },
+    "plugins": [
+      "expo-router",
+      "expo-secure-store",
+      "expo-font",
+      "expo-web-browser",
+      ["expo-splash-screen", { "backgroundColor": "#EA580C", "image": "./assets/splash-icon.png", "imageWidth": 180 }],
+      ["expo-image-picker", { "photosPermission": "Mehman uses your photos to attach payment receipts and listing images." }]
+    ],
+    "extra": {
+      "apiUrl": "https://backend.mehman.co"
+    }
+  }
+}
