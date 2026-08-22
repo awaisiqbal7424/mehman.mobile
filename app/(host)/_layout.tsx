@@ -31,7 +31,7 @@ export default function HostTabsLayout() {
         <Tabs.Screen
           name="index"
           options={{
-            title: 'Today',
+            title: 'Home',
             tabBarIcon: ({ color, focused, size }) => (
               <House size={size} color={String(color)} weight={focused ? 'bold' : 'regular'} />
             ),

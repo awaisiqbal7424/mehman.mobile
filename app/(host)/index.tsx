@@ -1,5 +1,6 @@
 import { Ionicons } from '../../src/components/ui/LucideIcon';
 import { useQuery } from '@tanstack/react-query';
+import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
 import React from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
@@ -54,6 +55,55 @@ export default function HostDashboardScreen() {
         title={`Salaam, ${provider?.name ?? 'host'}`}
         subtitle="Here is how your hosting is going"
       />
+
+      {/* ── quick actions ───────────────────────────────────────────────── */}
+      <View style={[styles.section, styles.quickGrid]}>
+        <QuickAction
+          label="Bookings"
+          source={require('../../assets/calendar-date-3d.png')}
+          onPress={() => router.push('/(host)/bookings')}
+        />
+        <QuickAction
+          label="Calendar"
+          source={require('../../assets/calendar-3d.png')}
+          onPress={() => router.push('/(host)/calendar')}
+        />
+        <QuickAction
+          label="Messages"
+          source={require('../../assets/chat-3d.png')}
+          onPress={() => router.push('/host/messages')}
+        />
+        <QuickAction
+          label="Trip requests"
+          source={require('../../assets/briefcase-3d.png.png')}
+          onPress={() => router.push('/host/quotes')}
+        />
+        <QuickAction
+          label="Earnings"
+          source={require('../../assets/wallet-3d.png')}
+          onPress={() => router.push('/host/earnings')}
+        />
+        <QuickAction
+          label="Reviews"
+          source={require('../../assets/heart-3d.png')}
+          onPress={() => router.push('/host/reviews')}
+        />
+        <QuickAction
+          label="Listings"
+          source={require('../../assets/bag-3d.png')}
+          onPress={() => router.push('/(host)/listings')}
+        />
+        <QuickAction
+          label="Add listing"
+          source={require('../../assets/folder-plus-3d.png')}
+          onPress={() => router.push('/host/listing/new')}
+        />
+        <QuickAction
+          label="Profile"
+          source={require('../../assets/avatar-3d.png')}
+          onPress={() => router.push('/host/profile')}
+        />
+      </View>
 
       {/* ── earnings ────────────────────────────────────────────────────── */}
       <View style={styles.section}>
@@ -320,6 +370,30 @@ function MonthBars({ months }: { months: { month: string; ownerRevenue: number }
   );
 }
 
+function QuickAction({
+  label, source, onPress,
+}: {
+  label: string;
+  source: number;
+  onPress: () => void;
+}) {
+  return (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={label}
+      onPress={onPress}
+      style={({ pressed }) => [styles.quickItem, pressed && { opacity: 0.7 }]}
+    >
+      <View style={styles.quickIcon}>
+        <Image source={source} style={styles.quickImage} contentFit="contain" />
+      </View>
+      <Text variant="smallStrong" numberOfLines={1}>
+        {label}
+      </Text>
+    </Pressable>
+  );
+}
+
 function LegendDot({ color, label }: { color: string; label: string }) {
   return (
     <View style={styles.legendItem}>
@@ -335,6 +409,11 @@ const styles = StyleSheet.create({
   flex: { flex: 1 },
   section: { paddingHorizontal: spacing.lg, marginBottom: spacing.xl, gap: spacing.md },
   sectionHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: spacing.md },
+
+  quickGrid: { flexDirection: 'row', flexWrap: 'wrap' },
+  quickItem: { width: '33.33%', alignItems: 'center', gap: spacing.xs, marginBottom: spacing.md },
+  quickIcon: { width: 64, height: 64, alignItems: 'center', justifyContent: 'center' },
+  quickImage: { width: 60, height: 60 },
 
   earnings: { gap: 2 },
   payoutBar: { flexDirection: 'row', height: 8, borderRadius: 4, overflow: 'hidden', marginTop: spacing.lg },
