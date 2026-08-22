@@ -1,10 +1,11 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { create } from 'zustand';
 import { clearToken, errorMessage, hydrateToken } from '../api/client';
-import { authApi, hostApi } from '../api/services';
+import { authApi, hostApi, providerApi } from '../api/services';
 import type { AppRole, LoginRequest, ProviderStatus, RegisterRequest, ServiceProvider, User } from '../types';
 
 const ROLE_KEY = 'mehman_role';
+const CLAIM_KEY = 'mehman_claimed_provider_id';
 
 /**
  * Decides which business a host is looking at, and what state they are in.
@@ -50,6 +51,16 @@ interface AuthState {
   refreshProviders: () => Promise<void>;
   setRole: (role: AppRole) => Promise<void>;
   setActiveProvider: (providerId: string) => void;
+  /**
+   * Manual fallback for when `/api/provider/my` will not surface a business
+   * that demonstrably belongs to this account (confirmed approved elsewhere,
+   * e.g. the provider dashboard) — a backend identity mismatch between
+   * clients, not something this app can wait out. Looks the business up by
+   * id on the public, ownership-agnostic endpoint and remembers it on this
+   * device so it survives the next launch without needing `/api/provider/my`
+   * to ever agree.
+   */
+  claimProvider: (providerId: string) => Promise<{ ok: boolean; message?: string }>;
   /** Called by the API client when the server rejects a token we thought was good. */
   handleSessionExpired: () => void;
 }
@@ -77,6 +88,28 @@ async function loadProviders(): Promise<{ providers: ServiceProvider[]; provider
   }
 }
 
+/**
+ * If `/api/provider/my` says "none" but this device previously claimed a
+ * specific business (see `claimProvider`), re-fetch it and let that stand in.
+ * Only ever fills a gap — it never overrides a real 'approved'/'pending'/
+ * 'rejected' result the endpoint itself provided.
+ */
+async function applyClaimIfNone(
+  providers: ServiceProvider[],
+  resolved: { provider: ServiceProvider | null; status: ProviderStatus },
+): Promise<{ providers: ServiceProvider[]; provider: ServiceProvider | null; status: ProviderStatus }> {
+  if (resolved.status !== 'none') return { providers, ...resolved };
+  try {
+    const claimedId = await AsyncStorage.getItem(CLAIM_KEY);
+    if (!claimedId) return { providers, ...resolved };
+    const claimed = await providerApi.getById(claimedId);
+    const status: ProviderStatus = claimed.isApproved ? 'approved' : claimed.isReject ? 'rejected' : 'pending';
+    return { providers: [claimed], provider: claimed, status };
+  } catch {
+    return { providers, ...resolved };
+  }
+}
+
 export const useAuth = create<AuthState>((set, get) => ({
   initialising: true,
   ...signedOut,
@@ -101,13 +134,20 @@ export const useAuth = create<AuthState>((set, get) => ({
       set({ user });
 
       const { providers, providersError } = await loadProviders();
-      const resolved = resolveProvider(providers);
+      const claimed = await applyClaimIfNone(providers, resolveProvider(providers));
       if (providersError) console.warn('[auth] /api/provider/my failed on bootstrap:', providersError);
 
       // Only restore the host view if they still have an approved business.
-      const role: AppRole = savedRole === 'host' && resolved.status === 'approved' ? 'host' : 'guest';
+      const role: AppRole = savedRole === 'host' && claimed.status === 'approved' ? 'host' : 'guest';
 
-      set({ providers, ...resolved, providersError, role, initialising: false });
+      set({
+        providers: claimed.providers,
+        provider: claimed.provider,
+        providerStatus: claimed.status,
+        providersError,
+        role,
+        initialising: false,
+      });
     } catch {
       await clearToken();
       set({ ...signedOut, initialising: false });
@@ -118,15 +158,16 @@ export const useAuth = create<AuthState>((set, get) => ({
     await authApi.login(credentials);
     const user = await authApi.getAccount();
     const { providers, providersError } = await loadProviders();
-    const resolved = resolveProvider(providers);
+    const claimed = await applyClaimIfNone(providers, resolveProvider(providers));
     if (providersError) console.warn('[auth] /api/provider/my failed on login:', providersError);
 
     set({
       user,
-      providers,
-      ...resolved,
+      providers: claimed.providers,
+      provider: claimed.provider,
+      providerStatus: claimed.status,
       providersError,
-      role: resolved.status === 'approved' ? 'host' : 'guest',
+      role: claimed.status === 'approved' ? 'host' : 'guest',
       initialising: false,
     });
     return user;
@@ -166,7 +207,13 @@ export const useAuth = create<AuthState>((set, get) => ({
       set({ providersError });
       return;
     }
-    set({ providers, ...resolveProvider(providers), providersError: null });
+    const claimed = await applyClaimIfNone(providers, resolveProvider(providers));
+    set({
+      providers: claimed.providers,
+      provider: claimed.provider,
+      providerStatus: claimed.status,
+      providersError: null,
+    });
   },
 
   setRole: async (role) => {
@@ -177,6 +224,19 @@ export const useAuth = create<AuthState>((set, get) => ({
   setActiveProvider: (providerId) => {
     const match = get().providers.find((p) => p.id === providerId);
     if (match) set({ provider: match });
+  },
+
+  claimProvider: async (providerId) => {
+    try {
+      const found = await providerApi.getById(providerId.trim());
+      if (!found?.id) return { ok: false, message: "That didn't look like a valid business." };
+      await AsyncStorage.setItem(CLAIM_KEY, found.id);
+      const status: ProviderStatus = found.isApproved ? 'approved' : found.isReject ? 'rejected' : 'pending';
+      set({ providers: [found], provider: found, providerStatus: status, providersError: null });
+      return { ok: true };
+    } catch (err) {
+      return { ok: false, message: errorMessage(err, 'Could not find that business.') };
+    }
   },
 
   handleSessionExpired: () => {

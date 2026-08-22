@@ -35,8 +35,12 @@ export default function ProfileScreen() {
   const logout = useAuth((s) => s.logout);
   const refreshAccount = useAuth((s) => s.refreshAccount);
   const refreshProviders = useAuth((s) => s.refreshProviders);
+  const claimProvider = useAuth((s) => s.claimProvider);
   const clearWishlist = useWishlist((s) => s.clear);
   const [copied, setCopied] = useState(false);
+  const [claimOpen, setClaimOpen] = useState(false);
+  const [claimInput, setClaimInput] = useState('');
+  const [claiming, setClaiming] = useState(false);
 
   // A business approved (or rejected) while the app sat in the background —
   // or in a previous session that never logged back out — must not still
@@ -151,6 +155,29 @@ export default function ProfileScreen() {
     setCopied(true);
     toast.success('Copied — paste it into a message to Mehman support');
     setTimeout(() => setCopied(false), 2000);
+  };
+
+  /** Accepts a raw id or a pasted profile link (mehman.co/provider/{id}) —
+   * whatever is easiest to grab from the website. */
+  const onClaim = async () => {
+    const id = claimInput.trim().replace(/\/+$/, '').split(/[/?#]/).filter(Boolean).pop();
+    if (!id) {
+      toast.error('Paste your business ID or profile link.');
+      return;
+    }
+    setClaiming(true);
+    try {
+      const result = await claimProvider(id);
+      if (result.ok) {
+        toast.success('Found it — your business now shows below.');
+        setClaimOpen(false);
+        setClaimInput('');
+      } else {
+        toast.error(result.message ?? 'Could not find that business.');
+      }
+    } finally {
+      setClaiming(false);
+    }
   };
 
   return (
@@ -281,13 +308,23 @@ export default function ProfileScreen() {
             <Text variant="caption" tone="muted" selectable style={styles.diagnosticsText}>
               {diagnosticsText()}
             </Text>
-            <Button
-              label={copied ? 'Copied' : 'Copy details'}
-              variant="outline"
-              size="sm"
-              icon={copied ? 'checkmark-circle-outline' : 'copy-outline'}
-              onPress={() => void onCopyDiagnostics()}
-            />
+            <View style={styles.diagnosticsActions}>
+              <Button
+                label={copied ? 'Copied' : 'Copy details'}
+                variant="outline"
+                size="sm"
+                icon={copied ? 'checkmark-circle-outline' : 'copy-outline'}
+                onPress={() => void onCopyDiagnostics()}
+                style={styles.flex}
+              />
+              <Button
+                label="I know my business ID"
+                variant="ghost"
+                size="sm"
+                onPress={() => setClaimOpen(true)}
+                style={styles.flex}
+              />
+            </View>
           </Card>
         ) : null}
       </View>
@@ -385,6 +422,29 @@ export default function ProfileScreen() {
       </View>
 
       {/* ── sheets ──────────────────────────────────────────────────────── */}
+      <Sheet
+        visible={claimOpen}
+        onClose={() => setClaimOpen(false)}
+        title="Find your business"
+        subtitle="Paste its ID or its public profile link from mehman.co"
+        footer={
+          <Button label="Find it" size="lg" fullWidth loading={claiming} onPress={() => void onClaim()} />
+        }
+      >
+        <Input
+          label="Business ID or link"
+          placeholder="https://mehman.co/provider/…"
+          value={claimInput}
+          onChangeText={setClaimInput}
+          autoCapitalize="none"
+          autoCorrect={false}
+        />
+        <Text variant="small" tone="muted">
+          This looks your business up directly rather than waiting on the check that isn't finding it — a
+          stand-in until that's fixed for good, not a way around anything the server itself protects.
+        </Text>
+      </Sheet>
+
       <ConfirmSheet
         visible={signOutOpen}
         onClose={() => setSignOutOpen(false)}
@@ -479,6 +539,7 @@ const styles = StyleSheet.create({
     borderRadius: radius.md,
     fontFamily: 'monospace',
   },
+  diagnosticsActions: { flexDirection: 'row', gap: spacing.sm },
 
   hostRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
   hostIcon: {
