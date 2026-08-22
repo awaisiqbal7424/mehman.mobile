@@ -135,3 +135,23 @@ export const titleCase = (value?: string): string =>
     .filter(Boolean)
     .map((w) => w[0].toUpperCase() + w.slice(1))
     .join(' ');
+
+/* ── identity & payout ────────────────────────────────────────────────────── */
+
+/** 13 digits as 12345-1234567-1, as the guest types. */
+export const formatCnic = (raw: string): string => {
+  const d = raw.replace(/\D/g, '').slice(0, 13);
+  if (d.length <= 5) return d;
+  if (d.length <= 12) return `${d.slice(0, 5)}-${d.slice(5)}`;
+  return `${d.slice(0, 5)}-${d.slice(5, 12)}-${d.slice(12)}`;
+};
+
+export const isValidCnic = (value: string): boolean => /^\d{5}-\d{7}-\d$/.test(value);
+
+/** 03xx-xxxxxxx, for a wallet number (Easypaisa/JazzCash). */
+export const formatMobile = (raw: string): string => {
+  const d = raw.replace(/\D/g, '').slice(0, 11);
+  return d.length <= 4 ? d : `${d.slice(0, 4)}-${d.slice(4)}`;
+};
+
+export const isValidMobile = (value: string): boolean => /^03\d{2}-\d{7}$/.test(value);

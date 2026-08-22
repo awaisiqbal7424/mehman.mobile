@@ -42,7 +42,7 @@ export default function GuestTabsLayout() {
         <Tabs.Screen
           name="index"
           options={{
-            title: 'Explore',
+            title: 'Discover',
             tabBarIcon: ({ color, focused, size }) => (
               <Compass size={size} color={String(color)} weight={focused ? 'bold' : 'regular'} />
             ),
@@ -69,7 +69,7 @@ export default function GuestTabsLayout() {
         <Tabs.Screen
           name="inbox"
           options={{
-            title: 'Inbox',
+            title: 'Chats',
             tabBarBadge: unreadTotal > 0 ? (unreadTotal > 9 ? '9+' : unreadTotal) : undefined,
             tabBarIcon: ({ color, focused, size }) => (
               <ChatCircle size={size} color={String(color)} weight={focused ? 'bold' : 'regular'} />

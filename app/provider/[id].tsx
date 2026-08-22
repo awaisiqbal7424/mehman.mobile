@@ -81,6 +81,10 @@ export default function ProviderDetailScreen() {
   const cover = parseJsonArray<string>(host.subImagesJson)[0] ?? host.logoUrl ?? PLACEHOLDER_IMAGE;
   const tags = parseJsonArray<string>(host.tagsJson);
   const certificates = parseJsonArray<string>(host.providerCertificatesJson);
+  // Guides and vehicles are not offered on any browse surface yet (see
+  // SEARCH_TABS) — a host's public page should not be the one place they
+  // still slip through.
+  const liveListings = listings.data?.filter((p) => p.packageType === 'TOUR' || p.packageType === 'STAY');
 
   return (
     <Screen scroll edges="none" refreshing={provider.isRefetching} onRefresh={() => void provider.refetch()}>
@@ -150,9 +154,9 @@ export default function ProviderDetailScreen() {
           <Text variant="heading">Listings</Text>
           {listings.isLoading ? (
             <CardSkeleton count={2} />
-          ) : listings.data?.length ? (
+          ) : liveListings?.length ? (
             <View style={styles.listings}>
-              {listings.data.map((item) => (
+              {liveListings.map((item) => (
                 <PackageCard key={item.id} item={item} />
               ))}
             </View>

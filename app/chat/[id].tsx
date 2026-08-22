@@ -119,7 +119,11 @@ export default function ChatScreen() {
 
       <KeyboardAvoidingView
         style={styles.flex}
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        // 'height' on Android: `adjustResize` alone was not reliably
+        // resizing the layout under `edgeToEdgeEnabled` (see app.json),
+        // which left the composer sitting under the keyboard instead of
+        // riding above it.
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         keyboardVerticalOffset={Platform.OS === 'ios' ? insets.top + 56 : 0}
       >
         <FlatList

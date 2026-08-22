@@ -1,6 +1,6 @@
 import React, { useEffect, useRef } from 'react';
 import { Animated, Easing, Modal, Pressable, ScrollView, StyleSheet, View } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { SafeAreaProvider, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors, radius, shadow, spacing } from '../../theme';
 import { Button, IconButton } from './Button';
 import { Text } from './Text';
@@ -31,8 +31,6 @@ export function Sheet({
   footer?: React.ReactNode;
   scroll?: boolean;
 }) {
-  const insets = useSafeAreaInsets();
-
   // 0 = fully off the bottom, 1 = settled. Driven natively where possible;
   // `translateY` uses a percentage-free interpolation so the sheet's own height
   // does not have to be measured first.
@@ -51,53 +49,93 @@ export function Sheet({
 
   return (
     <Modal visible={visible} transparent animationType="none" onRequestClose={onClose} statusBarTranslucent>
-      <Animated.View style={[styles.scrim, { opacity: progress }]}>
-        <Pressable style={styles.scrimTap} onPress={onClose} accessibilityLabel="Close" accessibilityRole="button" />
-      </Animated.View>
+      {/*
+        A Modal opens its own native window on Android, and insets from the
+        app-level SafeAreaProvider do not reliably reach inside it — this is
+        what let the sheet's own padding come out as 0 and leave its footer
+        (the "Choose a date" button, a slot list) sitting under the phone's
+        own gesture bar or nav buttons. A SafeAreaProvider re-declared inside
+        the Modal re-measures insets for that window instead of inheriting a
+        stale value from outside it.
+      */}
+      <SafeAreaProvider>
+        <Animated.View style={[styles.scrim, { opacity: progress }]}>
+          <Pressable style={styles.scrimTap} onPress={onClose} accessibilityLabel="Close" accessibilityRole="button" />
+        </Animated.View>
 
-      <Animated.View
-        style={[
-          styles.sheet,
-          { paddingBottom: Math.max(insets.bottom, spacing.lg), transform: [{ translateY }] },
-        ]}
-      >
-        <View style={styles.grabber} />
-
-        {title ? (
-          <View style={styles.head}>
-            <View style={styles.headTitles}>
-              <Text variant="heading">{title}</Text>
-              {subtitle ? (
-                <Text variant="small" tone="secondary" style={styles.headSubtitle}>
-                  {subtitle}
-                </Text>
-              ) : null}
-            </View>
-            <IconButton
-              icon="close"
-              accessibilityLabel="Close"
-              background={colors.surfaceMuted}
-              onPress={onClose}
-            />
-          </View>
-        ) : null}
-
-        {scroll ? (
-          <ScrollView
-            style={styles.bodyScroll}
-            contentContainerStyle={styles.body}
-            keyboardShouldPersistTaps="handled"
-            showsVerticalScrollIndicator={false}
-          >
-            {children}
-          </ScrollView>
-        ) : (
-          <View style={styles.body}>{children}</View>
-        )}
-
-        {footer ? <View style={styles.footer}>{footer}</View> : null}
-      </Animated.View>
+        <SheetPanel
+          title={title}
+          subtitle={subtitle}
+          footer={footer}
+          scroll={scroll}
+          onClose={onClose}
+          translateY={translateY}
+        >
+          {children}
+        </SheetPanel>
+      </SafeAreaProvider>
     </Modal>
+  );
+}
+
+function SheetPanel({
+  title, subtitle, footer, scroll, onClose, translateY, children,
+}: {
+  title?: string;
+  subtitle?: string;
+  footer?: React.ReactNode;
+  scroll: boolean;
+  onClose: () => void;
+  translateY: Animated.AnimatedInterpolation<number>;
+  children: React.ReactNode;
+}) {
+  const insets = useSafeAreaInsets();
+
+  return (
+    <Animated.View
+      style={[
+        styles.sheet,
+        // A minimum comfortably clear of any Android nav bar even on the
+        // rare device that still reports a 0 inset here.
+        { paddingBottom: Math.max(insets.bottom, spacing.xl), transform: [{ translateY }] },
+      ]}
+    >
+      <View style={styles.grabber} />
+
+      {title ? (
+        <View style={styles.head}>
+          <View style={styles.headTitles}>
+            <Text variant="heading">{title}</Text>
+            {subtitle ? (
+              <Text variant="small" tone="secondary" style={styles.headSubtitle}>
+                {subtitle}
+              </Text>
+            ) : null}
+          </View>
+          <IconButton
+            icon="close"
+            accessibilityLabel="Close"
+            background={colors.surfaceMuted}
+            onPress={onClose}
+          />
+        </View>
+      ) : null}
+
+      {scroll ? (
+        <ScrollView
+          style={styles.bodyScroll}
+          contentContainerStyle={styles.body}
+          keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}
+        >
+          {children}
+        </ScrollView>
+      ) : (
+        <View style={styles.body}>{children}</View>
+      )}
+
+      {footer ? <View style={styles.footer}>{footer}</View> : null}
+    </Animated.View>
   );
 }
 

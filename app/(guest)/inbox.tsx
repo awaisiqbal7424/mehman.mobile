@@ -54,7 +54,7 @@ export default function InboxScreen() {
   if (!user) {
     return (
       <Screen scroll={false}>
-        <PageHeading title="Inbox" />
+        <PageHeading title="Chats" />
         <EmptyState
           icon="chatbubble-outline"
           title="Sign in to message hosts"
@@ -69,7 +69,7 @@ export default function InboxScreen() {
   return (
     <Screen scroll refreshing={conversations.isRefetching} onRefresh={() => void conversations.refetch()}>
       <PageHeading
-        title="Inbox"
+        title="Chats"
         subtitle="Your conversations with hosts"
         right={
           <IconButton

@@ -5,11 +5,11 @@
     "scheme": "mehman",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/brand/mehman-mark-black-on-orange-rounded.png",
+    "icon": "./assets/brand/mehman-mark-white-on-orange.png",
     "userInterfaceStyle": "light",
     "newArchEnabled": true,
     "splash": {
-      "image": "./assets/brand/mehman-mark-black-transparent.png",
+      "image": "./assets/brand/mehman-mark-white-transparent.png",
       "resizeMode": "contain",
       "backgroundColor": "#EA580C"
     },
@@ -30,8 +30,8 @@
       "edgeToEdgeEnabled": true,
       "adaptiveIcon": {
         "backgroundColor": "#EA580C",
-        "foregroundImage": "./assets/brand/mehman-mark-black-transparent.png",
-        "monochromeImage": "./assets/brand/mehman-mark-black-transparent.png"
+        "foregroundImage": "./assets/brand/mehman-mark-white-transparent.png",
+        "monochromeImage": "./assets/brand/mehman-mark-white-transparent.png"
       },
       "predictiveBackGestureEnabled": false,
       "permissions": [
@@ -39,7 +39,7 @@
       ]
     },
     "web": {
-      "favicon": "./assets/brand/mehman-mark-black-on-orange-rounded.png",
+      "favicon": "./assets/brand/mehman-mark-white-on-orange.png",
       "bundler": "metro"
     },
     "plugins": [
@@ -51,7 +51,7 @@
         "expo-splash-screen",
         {
           "backgroundColor": "#EA580C",
-          "image": "./assets/brand/mehman-mark-black-transparent.png",
+          "image": "./assets/brand/mehman-mark-white-transparent.png",
           "imageWidth": 180
         }
       ],

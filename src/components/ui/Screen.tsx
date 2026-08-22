@@ -42,6 +42,12 @@ export function Screen({
   // Non-zero only inside a tab navigator, so the last card clears the pill.
   const tabSpace = useTabBarSpace();
   const bottomPad = (edges === 'bottom' ? Math.max(insets.bottom, spacing.lg) : 0) + tabSpace;
+  // `edges` decides whether the *scrolling content* is allowed to run under
+  // the system nav bar at rest — it must not also decide whether a pinned
+  // footer does. A persistent CTA bar (price + "Choose a date", "Pay now")
+  // always needs real clearance, or it ends up sitting under the phone's own
+  // gesture bar/buttons on `edges="none"` screens like the package detail.
+  const footerBottomPad = Math.max(insets.bottom, spacing.lg) + tabSpace;
 
   const body = scroll ? (
     <ScrollView
@@ -74,16 +80,18 @@ export function Screen({
   return (
     <KeyboardAvoidingView
       style={styles.root}
-      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-      // On iOS the tab bar already offsets the view; without this the keyboard
-      // leaves a gap the height of the bar under the focused field.
-      keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 0}
+      // Android's default `adjustResize` does not reliably resize the layout
+      // under `edgeToEdgeEnabled` (see app.json) — fields near the bottom of
+      // a form stayed hidden behind the keyboard instead of scrolling into
+      // view. `height` makes RN own the resize on both platforms.
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      keyboardVerticalOffset={0}
     >
       {background ? (
         <View style={[styles.gradient, { backgroundColor: background }]}>
           {body}
           {footer ? (
-            <View style={[styles.footer, { paddingBottom: bottomPad }]}>{footer}</View>
+            <View style={[styles.footer, { paddingBottom: footerBottomPad }]}>{footer}</View>
           ) : null}
         </View>
       ) : (
@@ -95,7 +103,7 @@ export function Screen({
         >
           {body}
           {footer ? (
-            <View style={[styles.footer, { paddingBottom: bottomPad }]}>{footer}</View>
+            <View style={[styles.footer, { paddingBottom: footerBottomPad }]}>{footer}</View>
           ) : null}
         </LinearGradient>
       )}
