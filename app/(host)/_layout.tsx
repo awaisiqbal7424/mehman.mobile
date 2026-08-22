@@ -1,4 +1,4 @@
-import { Calendar, CalendarBlank, DotsThree, House, SquaresFour } from 'phosphor-react-native';
+import { Calendar, CalendarBlank, House, SquaresFour, User } from 'phosphor-react-native';
 import { Redirect, Tabs } from 'expo-router';
 import React from 'react';
 import { FloatingTabBar, TabBarSpaceContext } from '../../src/components/ui';
@@ -67,9 +67,9 @@ export default function HostTabsLayout() {
         <Tabs.Screen
           name="more"
           options={{
-            title: 'More',
+            title: 'Profile',
             tabBarIcon: ({ color, focused, size }) => (
-              <DotsThree size={size} color={String(color)} weight={focused ? 'bold' : 'regular'} />
+              <User size={size} color={String(color)} weight={focused ? 'bold' : 'regular'} />
             ),
           }}
         />

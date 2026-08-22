@@ -1,5 +1,6 @@
 import { Ionicons } from '../../src/components/ui/LucideIcon';
 import * as Clipboard from 'expo-clipboard';
+import * as ImagePicker from 'expo-image-picker';
 import { useFocusEffect, useRouter } from 'expo-router';
 import React, { useCallback, useState } from 'react';
 import { Linking, Pressable, StyleSheet, View } from 'react-native';
@@ -60,6 +61,8 @@ export default function ProfileScreen() {
   const [firstName, setFirstName] = useState(user?.firstName ?? '');
   const [lastName, setLastName] = useState(user?.lastName ?? '');
   const [phone, setPhone] = useState(user?.phoneNumber ?? '');
+  const [photoUrl, setPhotoUrl] = useState(user?.imageUrl ?? '');
+  const [pickingPhoto, setPickingPhoto] = useState(false);
 
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
@@ -87,6 +90,33 @@ export default function ProfileScreen() {
     );
   }
 
+  /** Same trick as the host's logo/cover upload: no image-upload endpoint
+   * exists, so the picture rides along as a plain base64 data URI inside the
+   * normal account update instead of a separate multipart request. */
+  const onPickPhoto = async () => {
+    const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (!permission.granted) {
+      toast.error('Allow photo access to change your profile photo.');
+      return;
+    }
+    setPickingPhoto(true);
+    try {
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ['images'],
+        allowsEditing: true,
+        aspect: [1, 1],
+        quality: 0.5,
+        base64: true,
+      });
+      if (result.canceled || !result.assets?.[0]?.base64) return;
+      setPhotoUrl(`data:image/jpeg;base64,${result.assets[0].base64}`);
+    } catch {
+      toast.error('Could not read that image.');
+    } finally {
+      setPickingPhoto(false);
+    }
+  };
+
   const onSaveProfile = async () => {
     setSaving(true);
     try {
@@ -95,6 +125,7 @@ export default function ProfileScreen() {
         firstName: firstName.trim(),
         lastName: lastName.trim(),
         phoneNumber: phone.trim() || undefined,
+        imageUrl: photoUrl || undefined,
       });
       await refreshAccount();
       toast.success('Profile updated');
@@ -453,6 +484,24 @@ export default function ProfileScreen() {
         title="Edit profile"
         footer={<Button label="Save changes" size="lg" fullWidth loading={saving} onPress={() => void onSaveProfile()} />}
       >
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Change profile photo"
+          onPress={() => void onPickPhoto()}
+          style={styles.photoPicker}
+        >
+          <Avatar uri={photoUrl} name={`${firstName} ${lastName}`} size={72} />
+          <View style={styles.photoEdit}>
+            {pickingPhoto ? (
+              <Text variant="caption" tone="inverse">
+                …
+              </Text>
+            ) : (
+              <Ionicons name="camera-outline" size={14} color={colors.textInverse} />
+            )}
+          </View>
+        </Pressable>
+
         <Input label="First name" value={firstName} onChangeText={setFirstName} autoCapitalize="words" />
         <Input label="Last name" value={lastName} onChangeText={setLastName} autoCapitalize="words" />
         <Input
@@ -523,6 +572,21 @@ const styles = StyleSheet.create({
 
   identity: { flexDirection: 'row', alignItems: 'center', gap: spacing.lg },
   editButton: { alignSelf: 'flex-start', marginTop: spacing.lg },
+
+  photoPicker: { alignSelf: 'center', marginBottom: spacing.sm },
+  photoEdit: {
+    position: 'absolute',
+    bottom: -2,
+    right: -2,
+    width: 26,
+    height: 26,
+    borderRadius: 13,
+    backgroundColor: colors.primary,
+    borderWidth: 2,
+    borderColor: colors.surface,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
 
   diagnosticsCard: { gap: spacing.sm },
   diagnosticsText: {

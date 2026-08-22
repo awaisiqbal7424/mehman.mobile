@@ -15,6 +15,7 @@ import { whatsAppUrl } from '../../src/constants';
 import { useAuth } from '../../src/store/auth';
 import { colors, radius, spacing } from '../../src/theme';
 import { formatCnic, formatMobile, isValidCnic, isValidMobile } from '../../src/utils/format';
+import { parseJsonArray } from '../../src/utils/packages';
 
 const MAX_SCAN_BYTES = 8 * 1024 * 1024;
 const WALLET_PROVIDERS = ['Easypaisa', 'JazzCash'];
@@ -46,7 +47,44 @@ export default function HostProfileScreen() {
   const [accountHolderName, setAccountHolderName] = useState(provider?.accountHolderName ?? '');
   const [iban, setIban] = useState(provider?.iban ?? '');
   const [swiftCode, setSwiftCode] = useState(provider?.swiftCode ?? '');
+  const [logoUrl, setLogoUrl] = useState(provider?.logoUrl ?? '');
+  const [coverUrl, setCoverUrl] = useState(parseJsonArray<string>(provider?.subImagesJson)[0] ?? '');
   const [saving, setSaving] = useState(false);
+  const [pickingLogo, setPickingLogo] = useState(false);
+  const [pickingCover, setPickingCover] = useState(false);
+
+  /**
+   * The API has no image-upload endpoint for a business's own photos — the
+   * onboarding form that created this business already sends a picture as a
+   * plain base64 data URI inside the normal JSON body, so this reuses that
+   * same proven path rather than inventing a new one.
+   */
+  const pickImage = async (kind: 'logo' | 'cover') => {
+    const setBusy = kind === 'logo' ? setPickingLogo : setPickingCover;
+    const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (!permission.granted) {
+      toast.error('Allow photo access to change this picture.');
+      return;
+    }
+    setBusy(true);
+    try {
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ['images'],
+        allowsEditing: true,
+        aspect: kind === 'logo' ? [1, 1] : [16, 9],
+        quality: 0.5,
+        base64: true,
+      });
+      if (result.canceled || !result.assets?.[0]?.base64) return;
+      const dataUri = `data:image/jpeg;base64,${result.assets[0].base64}`;
+      if (kind === 'logo') setLogoUrl(dataUri);
+      else setCoverUrl(dataUri);
+    } catch {
+      toast.error('Could not read that image.');
+    } finally {
+      setBusy(false);
+    }
+  };
 
   const save = async () => {
     if (!provider) return;
@@ -66,6 +104,8 @@ export default function HostProfileScreen() {
         accountHolderName: accountHolderName.trim() || undefined,
         iban: iban.trim() || undefined,
         swiftCode: swiftCode.trim() || undefined,
+        logoUrl: logoUrl || undefined,
+        subImagesJson: coverUrl ? JSON.stringify([coverUrl]) : undefined,
       });
       await refreshProviders();
       await queryClient.invalidateQueries({ queryKey: ['provider', provider.id] });
@@ -106,9 +146,53 @@ export default function HostProfileScreen() {
       />
 
       <View style={styles.body}>
+        {/* ── cover ───────────────────────────────────────────────────── */}
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Change cover photo"
+          onPress={() => void pickImage('cover')}
+          style={styles.cover}
+        >
+          {coverUrl ? (
+            <Image source={{ uri: coverUrl }} style={styles.coverImage} contentFit="cover" />
+          ) : (
+            <View style={styles.coverEmpty}>
+              <Ionicons name="images-outline" size={26} color={colors.textMuted} />
+            </View>
+          )}
+          <View style={styles.coverEdit}>
+            {pickingCover ? (
+              <Text variant="caption" tone="inverse">
+                …
+              </Text>
+            ) : (
+              <Ionicons name="camera-outline" size={16} color={colors.textInverse} />
+            )}
+            <Text variant="smallStrong" tone="inverse">
+              {coverUrl ? 'Change cover' : 'Add cover photo'}
+            </Text>
+          </View>
+        </Pressable>
+
         <Card>
           <View style={styles.identity}>
-            <Avatar uri={provider.logoUrl} name={provider.name} size={56} />
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Change business photo"
+              onPress={() => void pickImage('logo')}
+              style={styles.avatarWrap}
+            >
+              <Avatar uri={logoUrl} name={provider.name} size={56} />
+              <View style={styles.avatarEdit}>
+                {pickingLogo ? (
+                  <Text variant="caption" tone="inverse" style={styles.avatarEditBusy}>
+                    …
+                  </Text>
+                ) : (
+                  <Ionicons name="camera-outline" size={12} color={colors.textInverse} />
+                )}
+              </View>
+            </Pressable>
             <View style={styles.flex}>
               <Text variant="bodyStrong" numberOfLines={1}>
                 {provider.name}
@@ -511,6 +595,43 @@ const styles = StyleSheet.create({
   body: { paddingHorizontal: spacing.lg, gap: spacing.xl, paddingTop: spacing.sm, paddingBottom: spacing.xl },
   identity: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
   block: { gap: spacing.md },
+
+  cover: {
+    height: 140,
+    borderRadius: radius.xl,
+    backgroundColor: colors.surfaceMuted,
+    overflow: 'hidden',
+    justifyContent: 'flex-end',
+  },
+  coverImage: { ...StyleSheet.absoluteFill },
+  coverEmpty: { ...StyleSheet.absoluteFill, alignItems: 'center', justifyContent: 'center' },
+  coverEdit: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+    alignSelf: 'flex-start',
+    margin: spacing.md,
+    backgroundColor: 'rgba(28,25,23,0.6)',
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+    borderRadius: radius.full,
+  },
+
+  avatarWrap: { position: 'relative' },
+  avatarEdit: {
+    position: 'absolute',
+    bottom: -2,
+    right: -2,
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    backgroundColor: colors.primary,
+    borderWidth: 2,
+    borderColor: colors.surface,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  avatarEditBusy: { fontSize: 10, lineHeight: 12 },
   hoursRow: { flexDirection: 'row', gap: spacing.md },
   footnote: { paddingHorizontal: spacing.xs },
 

@@ -57,7 +57,7 @@ export default function HostMoreScreen() {
 
   return (
     <Screen scroll>
-      <PageHeading title="More" />
+      <PageHeading title="Profile" />
 
       {/* ── the business ────────────────────────────────────────────────── */}
       <View style={styles.section}>
@@ -128,22 +128,15 @@ export default function HostMoreScreen() {
       <View style={styles.section}>
         <Pressable
           accessibilityRole="button"
-          accessibilityLabel="Switch to travelling"
+          accessibilityLabel="Switch to Mehman"
           onPress={() => void onSwitchToGuest()}
-          style={({ pressed }) => [styles.switchCard, pressed && { opacity: 0.94 }]}
+          style={({ pressed }) => [styles.switchPill, pressed && { opacity: 0.94 }]}
         >
-          <View style={styles.switchIcon}>
-            <Ionicons name="compass-outline" size={22} color={colors.textInverse} />
-          </View>
-          <View style={styles.flex}>
-            <Text variant="bodyStrong" tone="inverse">
-              Switch to travelling
-            </Text>
-            <Text variant="small" tone="inverse" style={styles.switchCopy}>
-              Browse and book like any other guest.
-            </Text>
-          </View>
-          <Ionicons name="swap-horizontal" size={22} color={colors.textInverse} />
+          <Ionicons name="compass-outline" size={20} color={colors.textInverse} />
+          <Text variant="bodyStrong" tone="inverse" style={styles.flex}>
+            Switch to Mehman
+          </Text>
+          <Ionicons name="swap-horizontal" size={20} color={colors.textInverse} />
         </Pressable>
       </View>
 
@@ -251,23 +244,15 @@ const styles = StyleSheet.create({
   identity: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
   inlineButton: { alignSelf: 'flex-start', marginTop: spacing.lg },
 
-  switchCard: {
+  switchPill: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.md,
-    padding: spacing.lg,
-    borderRadius: radius.xl,
+    paddingVertical: spacing.md,
+    paddingHorizontal: spacing.xl,
+    borderRadius: radius.full,
     backgroundColor: colors.primary,
   },
-  switchIcon: {
-    width: 42,
-    height: 42,
-    borderRadius: radius.md,
-    backgroundColor: 'rgba(255,255,255,0.2)',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  switchCopy: { opacity: 0.9 },
 
   menuRow: {
     flexDirection: 'row',
