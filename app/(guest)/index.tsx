@@ -81,7 +81,18 @@ export default function ExploreScreen() {
       {/* ── greeting ──────────────────────────────────────────────────── */}
       <View style={[styles.top, { paddingTop: insets.top + spacing.md }]}>
         <View style={styles.greeting}>
-          <Text variant="title" tone="primary">{firstName ? `Salaam, ${firstName}` : 'Salaam'}</Text>
+          <Text variant="title">
+            {firstName ? (
+              <>
+                {'Salaam, '}
+                <Text variant="title" tone="primary">
+                  {firstName}
+                </Text>
+              </>
+            ) : (
+              'Salaam'
+            )}
+          </Text>
         </View>
         <View style={styles.topActions}>
           <IconButton
