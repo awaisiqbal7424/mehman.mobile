@@ -184,20 +184,30 @@ export default function ProfileScreen() {
           />
         ) : null}
         {providerStatus === 'approved' ? (
-          <Card onPress={() => void onSwitchToHost()} accessibilityLabel="Switch to hosting">
-            <View style={styles.hostRow}>
-              <View style={styles.hostIcon}>
-                <Ionicons name="business" size={22} color={colors.primary} />
-              </View>
-              <View style={styles.flex}>
-                <Text variant="bodyStrong">Switch to hosting</Text>
-                <Text variant="small" tone="muted" numberOfLines={1}>
-                  {provider?.name ?? 'Your business'}
-                </Text>
-              </View>
-              <Ionicons name="swap-horizontal" size={20} color={colors.primary} />
+          // A plain Card here reads as just another settings row — easy to
+          // miss among everything else on the screen. This is the one control
+          // that switches the whole app to the host side, so it gets the same
+          // bold, unmissable treatment as "Become a Mezban" and the host
+          // side's own "Switch to travelling" banner.
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Switch to hosting"
+            onPress={() => void onSwitchToHost()}
+            style={({ pressed }) => [styles.becomeHost, pressed && { opacity: 0.94 }]}
+          >
+            <View style={styles.switchIcon}>
+              <Ionicons name="business" size={22} color={colors.textInverse} />
             </View>
-          </Card>
+            <View style={styles.flex}>
+              <Text variant="bodyStrong" tone="inverse">
+                Switch to hosting
+              </Text>
+              <Text variant="small" tone="inverse" style={styles.becomeHostCopy} numberOfLines={1}>
+                {provider?.name ?? 'Your business'}
+              </Text>
+            </View>
+            <Ionicons name="swap-horizontal" size={22} color={colors.textInverse} />
+          </Pressable>
         ) : providerStatus === 'pending' ? (
           <Card>
             <View style={styles.hostRow}>
@@ -437,6 +447,14 @@ const styles = StyleSheet.create({
     backgroundColor: colors.primary,
   },
   becomeHostCopy: { opacity: 0.9, marginTop: 2 },
+  switchIcon: {
+    width: 42,
+    height: 42,
+    borderRadius: radius.md,
+    backgroundColor: 'rgba(255,255,255,0.2)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
 
   menuRow: {
     flexDirection: 'row',
