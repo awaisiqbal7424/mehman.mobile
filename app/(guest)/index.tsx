@@ -137,6 +137,7 @@ export default function ExploreScreen() {
       {/* ── rails ─────────────────────────────────────────────────────── */}
       <PackageRail
         title="Popular Tours"
+        accent="Tours"
         loading={tours.isLoading}
         items={tours.data?.items}
         onSeeAll={() => router.push('/(guest)/search?type=TOUR')}
@@ -151,6 +152,7 @@ export default function ExploreScreen() {
 
       <PackageRail
         title="Stay with a Mezban"
+        accent="Mezban"
         loading={stays.isLoading}
         items={stays.data?.items}
         onSeeAll={() => router.push('/(guest)/search?type=STAY')}
@@ -159,6 +161,7 @@ export default function ExploreScreen() {
 
       <PackageRail
         title="Best Value"
+        accent="Value"
         loading={bestValue.isLoading}
         items={bestValue.data?.items}
         onSeeAll={() => router.push('/(guest)/search?sort=price_asc')}
@@ -179,9 +182,10 @@ export default function ExploreScreen() {
 /* ── rails ────────────────────────────────────────────────────────────────── */
 
 function PackageRail({
-  title, items, loading, onSeeAll, emptyMessage,
+  title, accent, items, loading, onSeeAll, emptyMessage,
 }: {
   title: string;
+  accent?: string;
   items?: ProviderPackage[];
   loading: boolean;
   onSeeAll: () => void;
@@ -189,7 +193,7 @@ function PackageRail({
 }) {
   if (loading) {
     return (
-      <Section title={title}>
+      <Section title={title} accent={accent}>
         <CardSkeleton count={1} />
       </Section>
     );
@@ -197,7 +201,7 @@ function PackageRail({
 
   if (!items?.length) {
     return (
-      <Section title={title}>
+      <Section title={title} accent={accent}>
         <View style={styles.railEmpty}>
           <Text variant="small" tone="muted">
             {emptyMessage}
@@ -208,7 +212,7 @@ function PackageRail({
   }
 
   return (
-    <Section title={title} action="See all" onAction={onSeeAll}>
+    <Section title={title} accent={accent} action="See all" onAction={onSeeAll}>
       <FlatList
         horizontal
         data={items}
@@ -236,7 +240,7 @@ function DestinationRail({
   if (loading || !destinations?.length) return null;
 
   return (
-    <Section title="Explore Pakistan">
+    <Section title="Explore Pakistan" accent="Pakistan">
       <ScrollView
         horizontal
         showsHorizontalScrollIndicator={false}

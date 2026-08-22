@@ -33,10 +33,12 @@ export function Card({ children, onPress, padded = true, style, accessibilityLab
 
 /** A titled block. `action` sits opposite the title — usually a "See all". */
 export function Section({
-  title, subtitle, action, onAction, children, style,
+  title, subtitle, accent, action, onAction, children, style,
 }: {
   title: string;
   subtitle?: string;
+  /** A trailing word of `title` to pick out in the brand colour — the rest stays default. */
+  accent?: string;
   action?: string;
   onAction?: () => void;
   children?: React.ReactNode;
@@ -46,7 +48,18 @@ export function Section({
     <View style={[styles.section, style]}>
       <View style={styles.sectionHead}>
         <View style={styles.sectionTitles}>
-          <Text variant="heading" tone="primary">{title}</Text>
+          <Text variant="heading">
+            {accent && title.endsWith(accent) ? (
+              <>
+                {title.slice(0, title.length - accent.length)}
+                <Text variant="heading" tone="primary">
+                  {accent}
+                </Text>
+              </>
+            ) : (
+              title
+            )}
+          </Text>
           {subtitle ? (
             <Text variant="small" tone="secondary" style={styles.sectionSubtitle}>
               {subtitle}
