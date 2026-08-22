@@ -9,7 +9,7 @@
     "userInterfaceStyle": "light",
     "newArchEnabled": true,
     "splash": {
-      "image": "./assets/brand/mehman-mark-white-transparent.png",
+      "image": "./assets/brand/mehman-wordmark-white-on-orange.png",
       "resizeMode": "contain",
       "backgroundColor": "#EA580C"
     },
@@ -51,8 +51,8 @@
         "expo-splash-screen",
         {
           "backgroundColor": "#EA580C",
-          "image": "./assets/brand/mehman-mark-white-transparent.png",
-          "imageWidth": 180
+          "image": "./assets/brand/mehman-wordmark-white-on-orange.png",
+          "imageWidth": 300
         }
       ],
       [
