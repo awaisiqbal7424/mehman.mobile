@@ -154,9 +154,9 @@ export default function HostMoreScreen() {
         </Text>
         <Card padded={false}>
           <MenuRow
-            icon="person-outline"
-            label={`${user?.firstName ?? ''} ${user?.lastName ?? ''}`.trim() || 'Your account'}
-            value={user?.email}
+            icon="person-circle-outline"
+            label="Profile"
+            value={`${user?.firstName ?? ''} ${user?.lastName ?? ''}`.trim() || user?.email}
             onPress={() => router.push('/(guest)/profile')}
           />
           <Divider style={styles.menuDivider} />
