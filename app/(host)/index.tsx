@@ -51,10 +51,7 @@ export default function HostDashboardScreen() {
 
   return (
     <Screen scroll refreshing={refreshing} onRefresh={onRefresh}>
-      <PageHeading
-        title={`Salaam, ${provider?.name ?? 'host'}`}
-        subtitle="Here is how your hosting is going"
-      />
+      <PageHeading title={`Salaam, ${provider?.name ?? 'host'}`} />
 
       {/* ── quick actions ───────────────────────────────────────────────── */}
       <View style={[styles.section, styles.quickGrid]}>

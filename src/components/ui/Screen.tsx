@@ -176,8 +176,9 @@ export function PageHeading({
   right?: React.ReactNode;
   style?: StyleProp<ViewStyle>;
 }) {
+  const insets = useSafeAreaInsets();
   return (
-    <View style={[styles.pageHeading, style]}>
+    <View style={[styles.pageHeading, { paddingTop: insets.top + spacing.lg }, style]}>
       <View style={styles.flex}>
         <Text variant="display">{title}</Text>
         {subtitle ? (

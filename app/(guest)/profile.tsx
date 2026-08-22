@@ -1,5 +1,4 @@
 import { Ionicons } from '../../src/components/ui/LucideIcon';
-import * as Clipboard from 'expo-clipboard';
 import * as ImagePicker from 'expo-image-picker';
 import { useFocusEffect, useRouter } from 'expo-router';
 import React, { useCallback, useState } from 'react';
@@ -30,18 +29,12 @@ export default function ProfileScreen() {
   const user = useAuth((s) => s.user);
   const providerStatus = useAuth((s) => s.providerStatus);
   const providersError = useAuth((s) => s.providersError);
-  const providers = useAuth((s) => s.providers);
   const provider = useAuth((s) => s.provider);
   const setRole = useAuth((s) => s.setRole);
   const logout = useAuth((s) => s.logout);
   const refreshAccount = useAuth((s) => s.refreshAccount);
   const refreshProviders = useAuth((s) => s.refreshProviders);
-  const claimProvider = useAuth((s) => s.claimProvider);
   const clearWishlist = useWishlist((s) => s.clear);
-  const [copied, setCopied] = useState(false);
-  const [claimOpen, setClaimOpen] = useState(false);
-  const [claimInput, setClaimInput] = useState('');
-  const [claiming, setClaiming] = useState(false);
 
   // A business approved (or rejected) while the app sat in the background —
   // or in a previous session that never logged back out — must not still
@@ -169,48 +162,6 @@ export default function ProfileScreen() {
     router.replace('/(host)');
   };
 
-  /** What `/api/provider/my` actually returned, in a form worth pasting into
-   * a support message — the only view of it on a standalone build, where
-   * nobody can see a console.warn. */
-  const diagnosticsText = () =>
-    [
-      `Account: ${user?.email ?? '—'} (${user?.id ?? '—'})`,
-      `providerStatus: ${providerStatus}`,
-      `providersError: ${providersError ?? 'none'}`,
-      `Businesses returned by /api/provider/my: ${providers.length}`,
-      JSON.stringify(providers, null, 2),
-    ].join('\n');
-
-  const onCopyDiagnostics = async () => {
-    await Clipboard.setStringAsync(diagnosticsText());
-    setCopied(true);
-    toast.success('Copied — paste it into a message to Mehman support');
-    setTimeout(() => setCopied(false), 2000);
-  };
-
-  /** Accepts a raw id or a pasted profile link (mehman.co/provider/{id}) —
-   * whatever is easiest to grab from the website. */
-  const onClaim = async () => {
-    const id = claimInput.trim().replace(/\/+$/, '').split(/[/?#]/).filter(Boolean).pop();
-    if (!id) {
-      toast.error('Paste your business ID or profile link.');
-      return;
-    }
-    setClaiming(true);
-    try {
-      const result = await claimProvider(id);
-      if (result.ok) {
-        toast.success('Found it — your business now shows below.');
-        setClaimOpen(false);
-        setClaimInput('');
-      } else {
-        toast.error(result.message ?? 'Could not find that business.');
-      }
-    } finally {
-      setClaiming(false);
-    }
-  };
-
   return (
     <Screen scroll>
       <PageHeading title="Profile" />
@@ -318,38 +269,6 @@ export default function ProfileScreen() {
             />
           </Card>
         ) : null}
-
-        {providerStatus !== 'approved' ? (
-          <Card style={styles.diagnosticsCard}>
-            <Text variant="smallStrong" tone="secondary">
-              Expecting to see a business here?
-            </Text>
-            <Text variant="small" tone="muted">
-              Copy this and send it to Mehman support — it's exactly what the app asked the server for your
-              host status, and exactly what came back.
-            </Text>
-            <Text variant="caption" tone="muted" selectable style={styles.diagnosticsText}>
-              {diagnosticsText()}
-            </Text>
-            <View style={styles.diagnosticsActions}>
-              <Button
-                label={copied ? 'Copied' : 'Copy details'}
-                variant="outline"
-                size="sm"
-                icon={copied ? 'checkmark-circle-outline' : 'copy-outline'}
-                onPress={() => void onCopyDiagnostics()}
-                style={styles.flex}
-              />
-              <Button
-                label="I know my business ID"
-                variant="ghost"
-                size="sm"
-                onPress={() => setClaimOpen(true)}
-                style={styles.flex}
-              />
-            </View>
-          </Card>
-        ) : null}
       </View>
 
       {/* ── shortcuts ───────────────────────────────────────────────────── */}
@@ -445,29 +364,6 @@ export default function ProfileScreen() {
       </View>
 
       {/* ── sheets ──────────────────────────────────────────────────────── */}
-      <Sheet
-        visible={claimOpen}
-        onClose={() => setClaimOpen(false)}
-        title="Find your business"
-        subtitle="Paste its ID or its public profile link from mehman.co"
-        footer={
-          <Button label="Find it" size="lg" fullWidth loading={claiming} onPress={() => void onClaim()} />
-        }
-      >
-        <Input
-          label="Business ID or link"
-          placeholder="https://mehman.co/provider/…"
-          value={claimInput}
-          onChangeText={setClaimInput}
-          autoCapitalize="none"
-          autoCorrect={false}
-        />
-        <Text variant="small" tone="muted">
-          This looks your business up directly rather than waiting on the check that isn't finding it — a
-          stand-in until that's fixed for good, not a way around anything the server itself protects.
-        </Text>
-      </Sheet>
-
       <ConfirmSheet
         visible={signOutOpen}
         onClose={() => setSignOutOpen(false)}
@@ -587,15 +483,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-
-  diagnosticsCard: { gap: spacing.sm },
-  diagnosticsText: {
-    backgroundColor: colors.surfaceMuted,
-    padding: spacing.md,
-    borderRadius: radius.md,
-    fontFamily: 'monospace',
-  },
-  diagnosticsActions: { flexDirection: 'row', gap: spacing.sm },
 
   hostRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
   hostIcon: {
