@@ -98,7 +98,7 @@ export default function HostDashboardScreen() {
         <QuickAction
           label="Profile"
           source={require('../../assets/avatar-3d.png')}
-          onPress={() => router.push('/host/profile')}
+          onPress={() => router.push('/(host)/more')}
         />
       </View>
 
