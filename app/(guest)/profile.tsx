@@ -1,4 +1,5 @@
 import { Ionicons } from '../../src/components/ui/LucideIcon';
+import * as Clipboard from 'expo-clipboard';
 import { useFocusEffect, useRouter } from 'expo-router';
 import React, { useCallback, useState } from 'react';
 import { Linking, Pressable, StyleSheet, View } from 'react-native';
@@ -28,12 +29,14 @@ export default function ProfileScreen() {
   const user = useAuth((s) => s.user);
   const providerStatus = useAuth((s) => s.providerStatus);
   const providersError = useAuth((s) => s.providersError);
+  const providers = useAuth((s) => s.providers);
   const provider = useAuth((s) => s.provider);
   const setRole = useAuth((s) => s.setRole);
   const logout = useAuth((s) => s.logout);
   const refreshAccount = useAuth((s) => s.refreshAccount);
   const refreshProviders = useAuth((s) => s.refreshProviders);
   const clearWishlist = useWishlist((s) => s.clear);
+  const [copied, setCopied] = useState(false);
 
   // A business approved (or rejected) while the app sat in the background —
   // or in a previous session that never logged back out — must not still
@@ -129,6 +132,25 @@ export default function ProfileScreen() {
   const onSwitchToHost = async () => {
     await setRole('host');
     router.replace('/(host)');
+  };
+
+  /** What `/api/provider/my` actually returned, in a form worth pasting into
+   * a support message — the only view of it on a standalone build, where
+   * nobody can see a console.warn. */
+  const diagnosticsText = () =>
+    [
+      `Account: ${user?.email ?? '—'} (${user?.id ?? '—'})`,
+      `providerStatus: ${providerStatus}`,
+      `providersError: ${providersError ?? 'none'}`,
+      `Businesses returned by /api/provider/my: ${providers.length}`,
+      JSON.stringify(providers, null, 2),
+    ].join('\n');
+
+  const onCopyDiagnostics = async () => {
+    await Clipboard.setStringAsync(diagnosticsText());
+    setCopied(true);
+    toast.success('Copied — paste it into a message to Mehman support');
+    setTimeout(() => setCopied(false), 2000);
   };
 
   return (
@@ -243,6 +265,28 @@ export default function ProfileScreen() {
               icon="logo-whatsapp"
               style={styles.editButton}
               onPress={() => void Linking.openURL(whatsAppUrl('Hello Mehman, about my host application'))}
+            />
+          </Card>
+        ) : null}
+
+        {providerStatus !== 'approved' ? (
+          <Card style={styles.diagnosticsCard}>
+            <Text variant="smallStrong" tone="secondary">
+              Expecting to see a business here?
+            </Text>
+            <Text variant="small" tone="muted">
+              Copy this and send it to Mehman support — it's exactly what the app asked the server for your
+              host status, and exactly what came back.
+            </Text>
+            <Text variant="caption" tone="muted" selectable style={styles.diagnosticsText}>
+              {diagnosticsText()}
+            </Text>
+            <Button
+              label={copied ? 'Copied' : 'Copy details'}
+              variant="outline"
+              size="sm"
+              icon={copied ? 'checkmark-circle-outline' : 'copy-outline'}
+              onPress={() => void onCopyDiagnostics()}
             />
           </Card>
         ) : null}
@@ -427,6 +471,14 @@ const styles = StyleSheet.create({
 
   identity: { flexDirection: 'row', alignItems: 'center', gap: spacing.lg },
   editButton: { alignSelf: 'flex-start', marginTop: spacing.lg },
+
+  diagnosticsCard: { gap: spacing.sm },
+  diagnosticsText: {
+    backgroundColor: colors.surfaceMuted,
+    padding: spacing.md,
+    borderRadius: radius.md,
+    fontFamily: 'monospace',
+  },
 
   hostRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
   hostIcon: {
