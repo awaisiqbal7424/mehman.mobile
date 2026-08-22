@@ -1,4 +1,4 @@
-import type { PackageAvailability, ProviderPackage } from '../types';
+import type { PackageAvailability, PackagePricingOption, ProviderPackage } from '../types';
 
 /**
  * Central helpers for the four marketplace package types. Ported from the
@@ -26,6 +26,16 @@ export const typeLabel = (t?: string): string =>
 /** Which price field the type uses. */
 export const packagePrice = (pkg: Pick<ProviderPackage, 'packageType' | 'price' | 'pricePerNight'>): number =>
   (isSlotBased(pkg.packageType) ? pkg.price : pkg.pricePerNight) ?? 0;
+
+/** The unit price after a chosen pricing option (Couple Discount, etc.) is applied. */
+export const pricingOptionPrice = (basePrice: number, option: PackagePricingOption | null): number => {
+  if (!option) return basePrice;
+  if (option.pricingType === 'FIXED') return option.price ?? basePrice;
+  const change = option.percentageChange ?? 0;
+  return option.pricingType === 'PERCENTAGE_INCREASE'
+    ? basePrice * (1 + change / 100)
+    : basePrice * (1 - change / 100);
+};
 
 export const priceUnit = (t?: string): string =>
   ({ TOUR: 'per person', GUIDE: 'per person', STAY: 'per night', VEHICLE: 'per day' } as Record<string, string>)[

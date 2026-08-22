@@ -1,9 +1,9 @@
 import api, { setToken } from './client';
 import type {
-  Conversation, CustomTrip, HostBooking, HostDashboard, HostFinancials, LoginRequest,
-  LoginResponse, Message, PackageAvailability, PackageBooking, Paged, Payment,
-  PriceEstimate, ProviderCategory, ProviderPackage, ProviderType, RegisterRequest, Review,
-  SeasonalPricing, ServiceProvider, TripActivity, TripDestination, User, Wishlist,
+  Conversation, Coupon, CouponValidation, CustomTrip, HostBooking, HostDashboard, HostFinancials,
+  LoginRequest, LoginResponse, Message, PackageAvailability, PackageBooking, PackagePricingOption,
+  Paged, Payment, PriceEstimate, ProviderCategory, ProviderPackage, ProviderType, RegisterRequest,
+  Review, SeasonalPricing, ServiceProvider, TripActivity, TripDestination, User, Wishlist,
 } from '../types';
 
 /* ── auth ─────────────────────────────────────────────────────────────────── */
@@ -163,6 +163,47 @@ export const seasonalPricingApi = {
   },
   async remove(id: string): Promise<void> {
     await api.delete(`/api/seasonal-pricing/${id}`);
+  },
+};
+
+export const pricingOptionApi = {
+  async forPackage(packageId: string): Promise<PackagePricingOption[]> {
+    const { data } = await api.get<PackagePricingOption[]>(`/api/package-pricing-options/package/${packageId}`);
+    return data;
+  },
+  async create(payload: Partial<PackagePricingOption>): Promise<PackagePricingOption> {
+    const { data } = await api.post<PackagePricingOption>('/api/package-pricing-options', payload);
+    return data;
+  },
+  async update(id: string, payload: Partial<PackagePricingOption>): Promise<PackagePricingOption> {
+    const { data } = await api.put<PackagePricingOption>(`/api/package-pricing-options/${id}`, payload);
+    return data;
+  },
+  async remove(id: string): Promise<void> {
+    await api.delete(`/api/package-pricing-options/${id}`);
+  },
+};
+
+export const couponApi = {
+  async forProvider(providerId: string): Promise<Coupon[]> {
+    const { data } = await api.get<Coupon[]>(`/api/coupons/provider/${providerId}`);
+    return data;
+  },
+  async create(payload: Partial<Coupon>): Promise<Coupon> {
+    const { data } = await api.post<Coupon>('/api/coupons', payload);
+    return data;
+  },
+  async update(id: string, payload: Partial<Coupon>): Promise<Coupon> {
+    const { data } = await api.put<Coupon>(`/api/coupons/${id}`, payload);
+    return data;
+  },
+  async remove(id: string): Promise<void> {
+    await api.delete(`/api/coupons/${id}`);
+  },
+  /** Public: a guest redeeming a code at checkout. */
+  async validate(payload: { code: string; packageId: string; providerId?: string; amount: number }): Promise<CouponValidation> {
+    const { data } = await api.post<CouponValidation>('/api/coupons/validate', payload);
+    return data;
   },
 };
 

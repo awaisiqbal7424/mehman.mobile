@@ -6,7 +6,7 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useCallback, useMemo, useState } from 'react';
 import { Pressable, ScrollView, Share, StyleSheet, useWindowDimensions, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { availabilityApi, packageApi, providerApi, reviewApi } from '../../src/api/services';
+import { availabilityApi, packageApi, pricingOptionApi, providerApi, reviewApi } from '../../src/api/services';
 import { Calendar, type DateRange } from '../../src/components/Calendar';
 import {
   Avatar, Badge, Button, Card, Divider, EmptyState, ErrorState, FooterBar, IconButton,
@@ -17,10 +17,11 @@ import { useMessageHost } from '../../src/hooks/useMessageHost';
 import { useAuth } from '../../src/store/auth';
 import { useWishlist } from '../../src/store/wishlist';
 import { colors, palette, radius, spacing } from '../../src/theme';
-import type { PackageAvailability } from '../../src/types';
+import type { PackageAvailability, PackagePricingOption } from '../../src/types';
 import { formatTravelDate, nightsBetween, pkr, plural, toApiDate } from '../../src/utils/format';
 import {
-  durationLabel, isSlotBased, packageImages, packagePrice, parseJsonArray, priceUnit, typeLabel,
+  durationLabel, isSlotBased, packageImages, packagePrice, parseJsonArray, priceUnit,
+  pricingOptionPrice, typeLabel,
 } from '../../src/utils/packages';
 
 /** Hero height as a share of screen width, clamped so very narrow or very wide
@@ -55,6 +56,7 @@ export default function PackageDetailScreen() {
   const [guests, setGuests] = useState(1);
   const [range, setRange] = useState<DateRange>({ start: null, end: null });
   const [slot, setSlot] = useState<PackageAvailability | null>(null);
+  const [pricingOption, setPricingOption] = useState<PackagePricingOption | null>(null);
 
   const pkg = useQuery({
     queryKey: ['package', id],
@@ -94,6 +96,13 @@ export default function PackageDetailScreen() {
     enabled: Boolean(pkg.data?.providerId),
   });
 
+  const pricingOptions = useQuery({
+    queryKey: ['pricing-options', id],
+    queryFn: () => pricingOptionApi.forPackage(id),
+    enabled: Boolean(id),
+  });
+  const activePricingOptions = pricingOptions.data?.filter((option) => option.isActive) ?? [];
+
   /** Nights the host has closed, as API date strings. */
   const blockedDates = useMemo(() => {
     const closed = new Set<string>();
@@ -110,7 +119,8 @@ export default function PackageDetailScreen() {
     return found.length ? found : [PLACEHOLDER_IMAGE];
   }, [pkg.data]);
 
-  const price = pkg.data ? packagePrice(pkg.data) : 0;
+  const basePrice = pkg.data ? packagePrice(pkg.data) : 0;
+  const price = pricingOptionPrice(basePrice, pricingOption);
   const nights = nightsBetween(range.start, range.end);
 
   /** What the guest will actually be charged, fee included. */
@@ -166,12 +176,13 @@ export default function PackageDetailScreen() {
       params: {
         packageId: id,
         guests: String(guests),
+        ...(pricingOption ? { pricingOptionId: pricingOption.id } : {}),
         ...(slotBased
           ? { availabilityId: slot!.id, departureDate: slot!.date }
           : { checkIn: toApiDate(range.start!), checkOut: toApiDate(range.end!) }),
       },
     });
-  }, [guests, id, range.end, range.start, router, slot, slotBased, user]);
+  }, [guests, id, pricingOption, range.end, range.start, router, slot, slotBased, user]);
 
   if (pkg.isLoading) return <Loading label="Loading this listing…" />;
   if (pkg.isError || !pkg.data) {
@@ -607,6 +618,50 @@ export default function PackageDetailScreen() {
           </>
         )}
 
+        {activePricingOptions.length ? (
+          <>
+            <Divider />
+            <Text variant="smallStrong" tone="secondary">
+              Pricing
+            </Text>
+            <View style={styles.pricingOptions}>
+              <Pressable
+                accessibilityRole="radio"
+                accessibilityState={{ selected: !pricingOption }}
+                onPress={() => setPricingOption(null)}
+                style={[styles.pricingOptionRow, !pricingOption && styles.pricingOptionRowOn]}
+              >
+                <View style={styles.flex}>
+                  <Text variant="bodyStrong">Standard price</Text>
+                </View>
+                <Text variant="bodyStrong">{pkr(basePrice)}</Text>
+              </Pressable>
+              {activePricingOptions.map((option) => {
+                const selected = pricingOption?.id === option.id;
+                return (
+                  <Pressable
+                    key={option.id}
+                    accessibilityRole="radio"
+                    accessibilityState={{ selected }}
+                    onPress={() => setPricingOption(option)}
+                    style={[styles.pricingOptionRow, selected && styles.pricingOptionRowOn]}
+                  >
+                    <View style={styles.flex}>
+                      <Text variant="bodyStrong">{option.label}</Text>
+                      {option.description ? (
+                        <Text variant="small" tone="muted">
+                          {option.description}
+                        </Text>
+                      ) : null}
+                    </View>
+                    <Text variant="bodyStrong">{pkr(pricingOptionPrice(basePrice, option))}</Text>
+                  </Pressable>
+                );
+              })}
+            </View>
+          </>
+        ) : null}
+
         <Divider />
         <Stepper
           label="Guests"
@@ -834,6 +889,17 @@ const styles = StyleSheet.create({
   slotOff: { opacity: 0.5, backgroundColor: colors.surfaceMuted },
 
   sheetFooter: { gap: spacing.md },
+  pricingOptions: { gap: spacing.sm },
+  pricingOptionRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.md,
+    padding: spacing.lg,
+    borderRadius: radius.lg,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  pricingOptionRowOn: { borderColor: colors.primary, backgroundColor: colors.primarySoft },
   quote: { gap: 0 },
   quoteDivider: { marginVertical: spacing.sm },
 });

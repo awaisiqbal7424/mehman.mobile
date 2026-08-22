@@ -5,7 +5,7 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useMemo, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { errorMessage } from '../src/api/client';
-import { bookingApi, packageApi } from '../src/api/services';
+import { bookingApi, couponApi, packageApi, pricingOptionApi } from '../src/api/services';
 import {
   Button, Card, Divider, ErrorState, FooterBar, Header, Input, Loading, Notice, Row,
   Screen, Text, TextArea, useToast,
@@ -13,8 +13,9 @@ import {
 import { PLACEHOLDER_IMAGE, serviceFeeFor, SERVICE_FEE_LABEL } from '../src/constants';
 import { useAuth } from '../src/store/auth';
 import { colors, radius, spacing } from '../src/theme';
+import type { CouponValidation } from '../src/types';
 import { formatDateRange, formatTravelDate, nightsBetween, pkr, plural } from '../src/utils/format';
-import { isSlotBased, packageImages, packagePrice, typeLabel } from '../src/utils/packages';
+import { isSlotBased, packageImages, packagePrice, pricingOptionPrice, typeLabel } from '../src/utils/packages';
 
 /**
  * Review and confirm.
@@ -33,6 +34,7 @@ export default function CheckoutScreen() {
   const params = useLocalSearchParams<{
     packageId: string;
     guests: string;
+    pricingOptionId?: string;
     availabilityId?: string;
     departureDate?: string;
     checkIn?: string;
@@ -47,6 +49,10 @@ export default function CheckoutScreen() {
   const [guestPhone, setGuestPhone] = useState(user?.phoneNumber ?? '');
   const [phoneError, setPhoneError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [promoCode, setPromoCode] = useState('');
+  const [applying, setApplying] = useState(false);
+  const [appliedCoupon, setAppliedCoupon] = useState<CouponValidation | null>(null);
+  const [couponError, setCouponError] = useState<string | null>(null);
 
   const pkg = useQuery({
     queryKey: ['package', params.packageId],
@@ -54,8 +60,16 @@ export default function CheckoutScreen() {
     enabled: Boolean(params.packageId),
   });
 
+  const pricingOptions = useQuery({
+    queryKey: ['pricing-options', params.packageId],
+    queryFn: () => pricingOptionApi.forPackage(params.packageId),
+    enabled: Boolean(params.packageId && params.pricingOptionId),
+  });
+  const pricingOption = pricingOptions.data?.find((option) => option.id === params.pricingOptionId) ?? null;
+
   const slotBased = isSlotBased(pkg.data?.packageType);
-  const price = pkg.data ? packagePrice(pkg.data) : 0;
+  const basePrice = pkg.data ? packagePrice(pkg.data) : 0;
+  const price = pricingOptionPrice(basePrice, pricingOption);
   const nights = useMemo(
     () =>
       params.checkIn && params.checkOut
@@ -66,7 +80,41 @@ export default function CheckoutScreen() {
 
   const subtotal = slotBased ? price * guests : price * nights;
   const fee = serviceFeeFor(subtotal);
-  const total = subtotal + fee;
+  const discount = appliedCoupon?.valid ? (appliedCoupon.discountAmount ?? 0) : 0;
+  const total = Math.max(0, subtotal + fee - discount);
+
+  const onApplyPromo = async () => {
+    const code = promoCode.trim();
+    if (!code || !pkg.data) return;
+    setApplying(true);
+    setCouponError(null);
+    try {
+      const result = await couponApi.validate({
+        code,
+        packageId: pkg.data.id,
+        providerId: pkg.data.providerId,
+        amount: subtotal,
+      });
+      if (result.valid) {
+        setAppliedCoupon(result);
+        toast.success(`"${code.toUpperCase()}" applied`);
+      } else {
+        setAppliedCoupon(null);
+        setCouponError(result.message ?? 'That code is not valid for this booking.');
+      }
+    } catch (err) {
+      setAppliedCoupon(null);
+      setCouponError(errorMessage(err, 'We could not check that code.'));
+    } finally {
+      setApplying(false);
+    }
+  };
+
+  const onRemovePromo = () => {
+    setAppliedCoupon(null);
+    setPromoCode('');
+    setCouponError(null);
+  };
 
   const onConfirm = async () => {
     if (submitting || !pkg.data || !user) return;
@@ -88,6 +136,9 @@ export default function CheckoutScreen() {
         baseAmount: subtotal,
         serviceFee: fee,
         totalAmount: total,
+        pricingOptionId: pricingOption?.id,
+        couponCode: appliedCoupon?.valid ? promoCode.trim() : undefined,
+        discountAmount: discount || undefined,
         specialRequests: specialRequests.trim() || undefined,
       };
 
@@ -219,11 +270,51 @@ export default function CheckoutScreen() {
           />
         </View>
 
+        {/* ── promo code ──────────────────────────────────────────────── */}
+        <View style={styles.block}>
+          <Text variant="heading">Promo code</Text>
+          {appliedCoupon?.valid ? (
+            <View style={styles.promoApplied}>
+              <Ionicons name="pricetag" size={18} color={colors.success} />
+              <Text variant="bodyStrong" style={styles.flex}>
+                {promoCode.trim().toUpperCase()} applied — {pkr(discount)} off
+              </Text>
+              <Button label="Remove" variant="ghost" size="sm" onPress={onRemovePromo} />
+            </View>
+          ) : (
+            <View style={styles.promoRow}>
+              <Input
+                placeholder="Enter a code"
+                value={promoCode}
+                onChangeText={(value) => {
+                  setPromoCode(value);
+                  setCouponError(null);
+                }}
+                autoCapitalize="characters"
+                autoCorrect={false}
+                error={couponError ?? undefined}
+                containerStyle={styles.flex}
+              />
+              <Button
+                label="Apply"
+                variant="outline"
+                loading={applying}
+                disabled={!promoCode.trim()}
+                onPress={() => void onApplyPromo()}
+                style={styles.promoButton}
+              />
+            </View>
+          )}
+        </View>
+
         {/* ── the price ───────────────────────────────────────────────── */}
         <Card style={styles.block}>
           <Text variant="heading" style={styles.priceTitle}>
             Price details
           </Text>
+          {pricingOption ? (
+            <Row label="Pricing option" value={pricingOption.label} />
+          ) : null}
           <Row
             label={
               slotBased
@@ -233,6 +324,7 @@ export default function CheckoutScreen() {
             value={pkr(subtotal)}
           />
           <Row label={`Mehman service fee (${SERVICE_FEE_LABEL})`} value={pkr(fee)} />
+          {discount > 0 ? <Row label="Promo discount" value={`− ${pkr(discount)}`} /> : null}
           <Divider />
           <Row label="Total to pay" value={pkr(total)} strong />
         </Card>
@@ -270,6 +362,16 @@ const styles = StyleSheet.create({
   blockHint: { marginBottom: spacing.sm },
   field: { marginBottom: spacing.md },
   priceTitle: { marginBottom: spacing.sm },
+  promoRow: { flexDirection: 'row', gap: spacing.sm, alignItems: 'flex-start' },
+  promoButton: { marginTop: 3 },
+  promoApplied: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    padding: spacing.lg,
+    borderRadius: radius.lg,
+    backgroundColor: colors.successSoft,
+  },
 
   policy: { flexDirection: 'row', gap: spacing.sm, alignItems: 'flex-start', marginBottom: spacing.lg },
 

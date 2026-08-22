@@ -6,16 +6,22 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { errorMessage } from '../../../src/api/client';
-import { packageApi } from '../../../src/api/services';
+import { packageApi, pricingOptionApi } from '../../../src/api/services';
 import {
   Button, Card, ConfirmSheet, Divider, ErrorState, FooterBar, Header, Input, Loading, Notice,
-  Screen, Stepper, Text, TextArea, useToast,
+  Screen, Sheet, Stepper, Text, TextArea, useToast,
 } from '../../../src/components/ui';
 import { useAuth } from '../../../src/store/auth';
 import { colors, radius, spacing } from '../../../src/theme';
-import type { ProviderPackage } from '../../../src/types';
+import type { PackagePricingOption, ProviderPackage } from '../../../src/types';
 import { pkr } from '../../../src/utils/format';
 import { isSlotBased, packageImages, parseJsonArray } from '../../../src/utils/packages';
+
+const PRICING_TYPES = [
+  { id: 'PERCENTAGE_DECREASE', label: 'Discount', hint: '% off the base price — Couple Discount, Early Bird…' },
+  { id: 'FIXED', label: 'Fixed price', hint: 'A specific price for this guest type' },
+  { id: 'PERCENTAGE_INCREASE', label: 'Surcharge', hint: '% added to the base price' },
+] as const;
 
 const TYPES = [
   { id: 'TOUR', label: 'Tour', icon: 'trail-sign-outline' as const, hint: 'Multi-day, sold by the seat' },
@@ -51,6 +57,23 @@ export default function ListingEditorScreen() {
     queryFn: () => packageApi.getById(id),
     enabled: !isNew && Boolean(id),
   });
+
+  // Pricing options are their own resource, keyed to a package that must
+  // already exist — so, like seasonal pricing, they only show up once a
+  // listing has been saved at least once.
+  const pricingOptions = useQuery({
+    queryKey: ['pricing-options', id],
+    queryFn: () => pricingOptionApi.forPackage(id),
+    enabled: !isNew && Boolean(id),
+  });
+  const [optionSheetOpen, setOptionSheetOpen] = useState(false);
+  const [editingOption, setEditingOption] = useState<PackagePricingOption | null>(null);
+  const [optionLabel, setOptionLabel] = useState('');
+  const [optionType, setOptionType] = useState<(typeof PRICING_TYPES)[number]['id']>('PERCENTAGE_DECREASE');
+  const [optionValue, setOptionValue] = useState('');
+  const [optionDescription, setOptionDescription] = useState('');
+  const [optionSaving, setOptionSaving] = useState(false);
+  const [optionErrors, setOptionErrors] = useState<{ label?: string; value?: string }>({});
 
   const [packageType, setPackageType] = useState('TOUR');
   const [name, setName] = useState('');
@@ -188,6 +211,71 @@ export default function ListingEditorScreen() {
       setDeleteOpen(false);
     } finally {
       setDeleting(false);
+    }
+  };
+
+  const openNewOption = () => {
+    setEditingOption(null);
+    setOptionLabel('');
+    setOptionType('PERCENTAGE_DECREASE');
+    setOptionValue('');
+    setOptionDescription('');
+    setOptionErrors({});
+    setOptionSheetOpen(true);
+  };
+
+  const openEditOption = (option: PackagePricingOption) => {
+    setEditingOption(option);
+    setOptionLabel(option.label ?? '');
+    setOptionType((option.pricingType as (typeof PRICING_TYPES)[number]['id']) ?? 'PERCENTAGE_DECREASE');
+    setOptionValue(
+      String((option.pricingType === 'FIXED' ? option.price : option.percentageChange) ?? ''),
+    );
+    setOptionDescription(option.description ?? '');
+    setOptionErrors({});
+    setOptionSheetOpen(true);
+  };
+
+  const saveOption = async () => {
+    const next: typeof optionErrors = {};
+    if (!optionLabel.trim()) next.label = 'Give it a name guests will recognise.';
+    if (!optionValue || Number(optionValue) <= 0) next.value = 'Set a value.';
+    setOptionErrors(next);
+    if (Object.keys(next).length) return;
+
+    setOptionSaving(true);
+    try {
+      const payload: Partial<PackagePricingOption> = {
+        packageId: id,
+        label: optionLabel.trim(),
+        pricingType: optionType,
+        description: optionDescription.trim() || undefined,
+        isActive: true,
+        ...(optionType === 'FIXED'
+          ? { price: Number(optionValue), percentageChange: undefined }
+          : { percentageChange: Number(optionValue), price: undefined }),
+      };
+
+      if (editingOption) await pricingOptionApi.update(editingOption.id, payload);
+      else await pricingOptionApi.create(payload);
+
+      await queryClient.invalidateQueries({ queryKey: ['pricing-options', id] });
+      toast.success(editingOption ? 'Pricing option updated' : 'Pricing option added');
+      setOptionSheetOpen(false);
+    } catch (err) {
+      toast.error(errorMessage(err, 'We could not save that pricing option.'));
+    } finally {
+      setOptionSaving(false);
+    }
+  };
+
+  const removeOption = async (option: PackagePricingOption) => {
+    try {
+      await pricingOptionApi.remove(option.id);
+      await queryClient.invalidateQueries({ queryKey: ['pricing-options', id] });
+      toast.success('Pricing option removed');
+    } catch (err) {
+      toast.error(errorMessage(err, 'We could not remove that pricing option.'));
     }
   };
 
@@ -355,6 +443,63 @@ export default function ListingEditorScreen() {
           )}
         </Card>
 
+        {/* ── pricing options ─────────────────────────────────────────── */}
+        {!isNew ? (
+          <View style={styles.block}>
+            <View style={styles.sectionHead}>
+              <View style={styles.flex}>
+                <Text variant="heading">Pricing options</Text>
+                <Text variant="small" tone="secondary">
+                  Offer named variants on top of your base price — a Couple Discount, Solo Female
+                  Traveler rate, Early Bird — guests pick one when they book.
+                </Text>
+              </View>
+            </View>
+
+            {pricingOptions.isLoading ? null : pricingOptions.data?.length ? (
+              <View style={styles.optionsList}>
+                {pricingOptions.data.map((option) => (
+                  <Pressable
+                    key={option.id}
+                    accessibilityRole="button"
+                    accessibilityLabel={`Edit ${option.label}`}
+                    onPress={() => openEditOption(option)}
+                    style={({ pressed }) => [styles.optionRow, pressed && { opacity: 0.85 }]}
+                  >
+                    <View style={styles.flex}>
+                      <Text variant="bodyStrong">{option.label}</Text>
+                      <Text variant="small" tone="muted">
+                        {option.pricingType === 'FIXED'
+                          ? `Fixed at ${pkr(option.price ?? 0)}`
+                          : `${option.pricingType === 'PERCENTAGE_INCREASE' ? '+' : '−'}${option.percentageChange ?? 0}% of base price`}
+                      </Text>
+                    </View>
+                    <Pressable
+                      accessibilityRole="button"
+                      accessibilityLabel={`Remove ${option.label}`}
+                      hitSlop={8}
+                      onPress={() => void removeOption(option)}
+                    >
+                      <Ionicons name="trash-outline" size={18} color={colors.danger} />
+                    </Pressable>
+                  </Pressable>
+                ))}
+              </View>
+            ) : (
+              <Text variant="small" tone="muted">
+                No pricing options yet — your base price is all guests see.
+              </Text>
+            )}
+
+            <Button
+              label="Add pricing option"
+              variant="outline"
+              icon="pricetag-outline"
+              onPress={openNewOption}
+            />
+          </View>
+        ) : null}
+
         {/* ── logistics ───────────────────────────────────────────────── */}
         {slotBased ? (
           <View style={styles.block}>
@@ -471,6 +616,86 @@ export default function ListingEditorScreen() {
         destructive
         loading={deleting}
       />
+
+      <Sheet
+        visible={optionSheetOpen}
+        onClose={() => setOptionSheetOpen(false)}
+        title={editingOption ? 'Edit pricing option' : 'Add a pricing option'}
+        footer={
+          <Button
+            label={editingOption ? 'Save changes' : 'Add option'}
+            size="lg"
+            fullWidth
+            loading={optionSaving}
+            onPress={() => void saveOption()}
+          />
+        }
+      >
+        <Input
+          label="Name"
+          placeholder="Couple Discount, Solo Female Traveler…"
+          value={optionLabel}
+          onChangeText={setOptionLabel}
+          error={optionErrors.label}
+          autoCapitalize="words"
+        />
+
+        <View style={styles.pricingTypeRow}>
+          {PRICING_TYPES.map((typeOption) => {
+            const selected = optionType === typeOption.id;
+            return (
+              <Pressable
+                key={typeOption.id}
+                accessibilityRole="radio"
+                accessibilityState={{ selected }}
+                onPress={() => setOptionType(typeOption.id)}
+                style={[styles.pricingTypeTile, selected && styles.pricingTypeTileOn]}
+              >
+                <Text variant="smallStrong" tone={selected ? 'primary' : 'default'} center>
+                  {typeOption.label}
+                </Text>
+              </Pressable>
+            );
+          })}
+        </View>
+        <Text variant="small" tone="muted">
+          {PRICING_TYPES.find((t) => t.id === optionType)?.hint}
+        </Text>
+
+        <Input
+          label={optionType === 'FIXED' ? 'Price' : 'Percentage'}
+          icon={optionType === 'FIXED' ? 'cash-outline' : 'calculator-outline'}
+          placeholder="0"
+          value={optionValue}
+          onChangeText={setOptionValue}
+          keyboardType="number-pad"
+          error={optionErrors.value}
+          hint={
+            optionValue && optionType !== 'FIXED'
+              ? `${optionType === 'PERCENTAGE_INCREASE' ? 'Adds' : 'Takes off'} ${optionValue}% of the base price`
+              : undefined
+          }
+        />
+
+        <Input
+          label="Note (optional)"
+          placeholder="Who this is for, or any condition that applies"
+          value={optionDescription}
+          onChangeText={setOptionDescription}
+        />
+
+        {editingOption ? (
+          <Button
+            label="Remove this option"
+            variant="danger"
+            icon="trash-outline"
+            onPress={() => {
+              setOptionSheetOpen(false);
+              void removeOption(editingOption);
+            }}
+          />
+        ) : null}
+      </Sheet>
     </Screen>
   );
 }
@@ -538,6 +763,30 @@ const styles = StyleSheet.create({
   block: { gap: spacing.md },
   subBlock: { marginTop: spacing.lg },
   cardTitle: { marginBottom: spacing.xs },
+  sectionHead: { flexDirection: 'row', alignItems: 'flex-start', gap: spacing.md },
+
+  optionsList: { gap: spacing.sm },
+  optionRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.md,
+    padding: spacing.lg,
+    borderRadius: radius.lg,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: colors.border,
+    backgroundColor: colors.surface,
+  },
+
+  pricingTypeRow: { flexDirection: 'row', gap: spacing.sm },
+  pricingTypeTile: {
+    flex: 1,
+    paddingVertical: spacing.md,
+    borderRadius: radius.md,
+    borderWidth: 2,
+    borderColor: colors.border,
+    backgroundColor: colors.surface,
+  },
+  pricingTypeTileOn: { borderColor: colors.primary, backgroundColor: colors.primarySoft },
 
   typeRow: { flexDirection: 'row', gap: spacing.md },
   typeTile: {

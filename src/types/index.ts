@@ -172,6 +172,9 @@ export interface PackageBooking {
   serviceFee?: number;
   totalAmount?: number;
   paidAmount?: number;
+  pricingOptionId?: string;
+  couponCode?: string;
+  discountAmount?: number;
   specialRequests?: string;
   cancellationReason?: string;
   cancelledAt?: string;
@@ -209,6 +212,47 @@ export interface SeasonalPricing {
   pricingType?: string; // FIXED | PERCENTAGE_INCREASE | PERCENTAGE_DECREASE
   percentageChange?: number;
   isActive: boolean;
+}
+
+/**
+ * A named price variant a provider can offer alongside their base price —
+ * "Couple Discount", "Solo Female Traveler", "Early Bird", etc. A guest picks
+ * one (or the base price) when booking; whichever is picked becomes the unit
+ * price the quote is built from.
+ */
+export interface PackagePricingOption {
+  id: string;
+  packageId?: string;
+  label: string;
+  pricingType?: string; // FIXED | PERCENTAGE_INCREASE | PERCENTAGE_DECREASE
+  price?: number; // absolute unit price, when pricingType === 'FIXED'
+  percentageChange?: number; // applied to the base price, when PERCENTAGE_INCREASE/DECREASE
+  description?: string;
+  isActive: boolean;
+}
+
+/** A promo code a provider issues, redeemable against their own listings. */
+export interface Coupon {
+  id: string;
+  providerId?: string;
+  packageId?: string; // scope to one listing; omitted applies to any of the provider's listings
+  code: string;
+  discountType?: string; // PERCENTAGE | FIXED
+  discountValue: number;
+  startDate?: string;
+  endDate?: string;
+  maxUses?: number;
+  usedCount?: number;
+  minBookingAmount?: number;
+  isActive: boolean;
+  createdAt?: string;
+}
+
+export interface CouponValidation {
+  valid: boolean;
+  message?: string;
+  discountAmount?: number;
+  coupon?: Coupon;
 }
 
 export interface CustomTrip {

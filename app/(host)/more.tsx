@@ -117,6 +117,12 @@ export default function HostMoreScreen() {
           <MenuRow icon="star-outline" label="Reviews" onPress={() => router.push('/host/reviews')} />
           <Divider style={styles.menuDivider} />
           <MenuRow
+            icon="pricetag-outline"
+            label="Coupons"
+            onPress={() => router.push('/host/coupons')}
+          />
+          <Divider style={styles.menuDivider} />
+          <MenuRow
             icon="business-outline"
             label="Business profile"
             onPress={() => router.push('/host/profile')}
