@@ -8,8 +8,8 @@ import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { errorMessage } from '../../../src/api/client';
 import { packageApi } from '../../../src/api/services';
 import {
-  Button, Card, Divider, ErrorState, FooterBar, Header, Input, Loading, Notice, Screen,
-  Stepper, Text, TextArea, useToast,
+  Button, Card, ConfirmSheet, Divider, ErrorState, FooterBar, Header, Input, Loading, Notice,
+  Screen, Stepper, Text, TextArea, useToast,
 } from '../../../src/components/ui';
 import { useAuth } from '../../../src/store/auth';
 import { colors, radius, spacing } from '../../../src/theme';
@@ -73,6 +73,8 @@ export default function ListingEditorScreen() {
   const [instantBook, setInstantBook] = useState(false);
   const [saving, setSaving] = useState(false);
   const [errors, setErrors] = useState<{ name?: string; price?: string }>({});
+  const [deleteOpen, setDeleteOpen] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
   // Fill the form once the listing arrives.
   useEffect(() => {
@@ -170,6 +172,22 @@ export default function ListingEditorScreen() {
       toast.error(errorMessage(err, 'We could not save that listing.'));
     } finally {
       setSaving(false);
+    }
+  };
+
+  const remove = async () => {
+    setDeleting(true);
+    try {
+      await packageApi.remove(id);
+      await queryClient.invalidateQueries({ queryKey: ['host-listings'] });
+      await queryClient.invalidateQueries({ queryKey: ['host-dashboard'] });
+      toast.success('Listing deleted');
+      router.back();
+    } catch (err) {
+      toast.error(errorMessage(err, 'We could not delete that listing.'));
+      setDeleteOpen(false);
+    } finally {
+      setDeleting(false);
     }
   };
 
@@ -429,7 +447,30 @@ export default function ListingEditorScreen() {
             </View>
           </Pressable>
         </View>
+
+        {/* ── danger zone ─────────────────────────────────────────────── */}
+        {!isNew ? (
+          <View style={styles.block}>
+            <Button
+              label="Delete this listing"
+              variant="danger"
+              icon="trash-outline"
+              onPress={() => setDeleteOpen(true)}
+            />
+          </View>
+        ) : null}
       </View>
+
+      <ConfirmSheet
+        visible={deleteOpen}
+        onClose={() => setDeleteOpen(false)}
+        onConfirm={() => void remove()}
+        title="Delete this listing?"
+        message="This cannot be undone, and it takes the listing's reviews with it. If you only want to stop taking bookings, hide it from the listings screen instead."
+        confirmLabel="Delete"
+        destructive
+        loading={deleting}
+      />
     </Screen>
   );
 }

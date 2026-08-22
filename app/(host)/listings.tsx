@@ -166,11 +166,14 @@ export default function HostListingsScreen() {
       </View>
 
       {/* ── per-listing actions ─────────────────────────────────────────── */}
+      {/* Four rows plus a divider does not fit `scroll={false}`'s fixed
+          height on every phone — a long listing name wrapping to two lines
+          was enough to push "Delete this listing" off the bottom with no way
+          to reach it. Scrollable keeps it reachable regardless. */}
       <Sheet
         visible={Boolean(menuFor)}
         onClose={() => setMenuFor(null)}
         title={menuFor?.name ?? 'Listing'}
-        scroll={false}
       >
         <SheetOption
           label={menuFor?.isActive ? 'Hide from guests' : 'Publish'}
