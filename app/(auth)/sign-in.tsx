@@ -46,8 +46,7 @@ export default function SignInScreen() {
       toast.success(`Welcome back, ${user.firstName || user.userName}`);
 
       if (redirect) router.replace(redirect as never);
-      else if (router.canGoBack()) router.back();
-      else router.replace('/(guest)');
+      else router.replace(useAuth.getState().role === 'host' ? '/(host)' : '/(guest)');
     } catch (err) {
       const message = errorMessage(err, 'Those details did not match an account.');
       // "Not activated" is a fixable state, not a wrong password — say so.

@@ -121,7 +121,14 @@ export const useAuth = create<AuthState>((set, get) => ({
     const resolved = resolveProvider(providers);
     if (providersError) console.warn('[auth] /api/provider/my failed on login:', providersError);
 
-    set({ user, providers, ...resolved, providersError, role: 'guest', initialising: false });
+    set({
+      user,
+      providers,
+      ...resolved,
+      providersError,
+      role: resolved.status === 'approved' ? 'host' : 'guest',
+      initialising: false,
+    });
     return user;
   },
 

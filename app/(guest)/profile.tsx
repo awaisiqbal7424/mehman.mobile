@@ -235,24 +235,7 @@ export default function ProfileScreen() {
               onPress={() => void Linking.openURL(whatsAppUrl('Hello Mehman, about my host application'))}
             />
           </Card>
-        ) : (
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel="Become a host"
-            onPress={() => router.push('/host/onboarding')}
-            style={({ pressed }) => [styles.becomeHost, pressed && { opacity: 0.94 }]}
-          >
-            <View style={styles.flex}>
-              <Text variant="bodyStrong" tone="inverse">
-                Become a Mezban
-              </Text>
-              <Text variant="small" tone="inverse" style={styles.becomeHostCopy}>
-                List your tours or your guesthouse and reach travellers across Pakistan.
-              </Text>
-            </View>
-            <Ionicons name="arrow-forward-circle" size={30} color={colors.textInverse} />
-          </Pressable>
-        )}
+        ) : null}
       </View>
 
       {/* ── shortcuts ───────────────────────────────────────────────────── */}
@@ -269,6 +252,27 @@ export default function ProfileScreen() {
           />
         </Card>
       </View>
+
+      {providerStatus === 'none' ? (
+        <View style={styles.section}>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Become a host"
+            onPress={() => router.push('/host/onboarding')}
+            style={({ pressed }) => [styles.becomeHost, pressed && { opacity: 0.94 }]}
+          >
+            <View style={styles.flex}>
+              <Text variant="bodyStrong" tone="inverse">
+                Become a Mezban
+              </Text>
+              <Text variant="small" tone="inverse" style={styles.becomeHostCopy}>
+                List your tours or your guesthouse and reach travellers across Pakistan.
+              </Text>
+            </View>
+            <Ionicons name="arrow-forward-circle" size={30} color={colors.textInverse} />
+          </Pressable>
+        </View>
+      ) : null}
 
       {/* ── account ─────────────────────────────────────────────────────── */}
       <View style={styles.section}>
