@@ -43,8 +43,8 @@ export default function GuestTabsLayout() {
           name="index"
           options={{
             title: 'Explore',
-            tabBarIcon: ({ color, focused }) => (
-              <Compass size={23} color={String(color)} weight={focused ? 'bold' : 'regular'} />
+            tabBarIcon: ({ color, focused, size }) => (
+              <Compass size={size} color={String(color)} weight={focused ? 'bold' : 'regular'} />
             ),
           }}
         />
@@ -52,8 +52,8 @@ export default function GuestTabsLayout() {
           name="search"
           options={{
             title: 'Search',
-            tabBarIcon: ({ color, focused }) => (
-              <MagnifyingGlass size={23} color={String(color)} weight={focused ? 'bold' : 'regular'} />
+            tabBarIcon: ({ color, focused, size }) => (
+              <MagnifyingGlass size={size} color={String(color)} weight={focused ? 'bold' : 'regular'} />
             ),
           }}
         />
@@ -61,8 +61,8 @@ export default function GuestTabsLayout() {
           name="trips"
           options={{
             title: 'Trips',
-            tabBarIcon: ({ color, focused }) => (
-              <TipiIcon size={22} color={String(color)} />
+            tabBarIcon: ({ color, size }) => (
+              <TipiIcon size={size} color={String(color)} />
             ),
           }}
         />
@@ -71,8 +71,8 @@ export default function GuestTabsLayout() {
           options={{
             title: 'Inbox',
             tabBarBadge: unreadTotal > 0 ? (unreadTotal > 9 ? '9+' : unreadTotal) : undefined,
-            tabBarIcon: ({ color, focused }) => (
-              <ChatCircle size={21} color={String(color)} weight={focused ? 'bold' : 'regular'} />
+            tabBarIcon: ({ color, focused, size }) => (
+              <ChatCircle size={size} color={String(color)} weight={focused ? 'bold' : 'regular'} />
             ),
           }}
         />
@@ -80,8 +80,8 @@ export default function GuestTabsLayout() {
           name="profile"
           options={{
             title: 'Profile',
-            tabBarIcon: ({ color, focused }) => (
-              <User size={22} color={String(color)} weight={focused ? 'bold' : 'regular'} />
+            tabBarIcon: ({ color, focused, size }) => (
+              <User size={size} color={String(color)} weight={focused ? 'bold' : 'regular'} />
             ),
           }}
         />

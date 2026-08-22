@@ -81,7 +81,7 @@ export default function ExploreScreen() {
       {/* ── greeting ──────────────────────────────────────────────────── */}
       <View style={[styles.top, { paddingTop: insets.top + spacing.md }]}>
         <View style={styles.greeting}>
-          <Text variant="title">{firstName ? `Salaam, ${firstName}` : 'Salaam'}</Text>
+          <Text variant="title" tone="primary">{firstName ? `Salaam, ${firstName}` : 'Salaam'}</Text>
         </View>
         <View style={styles.topActions}>
           <IconButton
@@ -136,7 +136,7 @@ export default function ExploreScreen() {
 
       {/* ── rails ─────────────────────────────────────────────────────── */}
       <PackageRail
-        title="Popular tours"
+        title="Popular Tours"
         loading={tours.isLoading}
         items={tours.data?.items}
         onSeeAll={() => router.push('/(guest)/search?type=TOUR')}
@@ -158,7 +158,7 @@ export default function ExploreScreen() {
       />
 
       <PackageRail
-        title="Best value"
+        title="Best Value"
         loading={bestValue.isLoading}
         items={bestValue.data?.items}
         onSeeAll={() => router.push('/(guest)/search?sort=price_asc')}
@@ -331,6 +331,9 @@ function CategoryButton({
       <View style={styles.categoryIcon}>
         {icon}
       </View>
+      <Text variant="smallStrong" numberOfLines={1}>
+        {label}
+      </Text>
     </Pressable>
   );
 }
@@ -377,7 +380,7 @@ const styles = StyleSheet.create({
     marginHorizontal: spacing.lg,
     marginBottom: spacing.xl,
   },
-  category: { alignItems: 'center', minWidth: 76 },
+  category: { alignItems: 'center', minWidth: 76, gap: spacing.xs },
   categoryIcon: {
     width: 84,
     height: 84,

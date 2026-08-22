@@ -1,13 +1,13 @@
 import { useRouter } from 'expo-router';
 import React from 'react';
-import { EmptyState, PageHeading, Screen } from '../src/components/ui';
+import { EmptyState, Header, Screen } from '../src/components/ui';
 
 export default function NotificationsScreen() {
   const router = useRouter();
 
   return (
     <Screen scroll={false}>
-      <PageHeading title="Notifications" />
+      <Header title="Notifications" />
       <EmptyState
         icon="notifications-outline"
         title="No notifications yet"

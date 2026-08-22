@@ -1,9 +1,8 @@
 import { useRouter } from 'expo-router';
 import React, { useState } from 'react';
-import { Linking, Pressable, StyleSheet, View } from 'react-native';
+import { Pressable, StyleSheet, View } from 'react-native';
 import { errorMessage } from '../../src/api/client';
 import { Button, Header, Input, Notice, Screen, Text, useToast } from '../../src/components/ui';
-import { LEGAL_URLS } from '../../src/constants';
 import { useAuth } from '../../src/store/auth';
 import { spacing } from '../../src/theme';
 
@@ -180,11 +179,11 @@ export default function SignUpScreen() {
 
         <Text variant="small" tone="muted" style={styles.legal}>
           By creating an account you agree to our{' '}
-          <Text variant="small" tone="primary" onPress={() => Linking.openURL(LEGAL_URLS.terms)}>
+          <Text variant="small" tone="primary" onPress={() => router.push('/legal/terms')}>
             Terms
           </Text>{' '}
           and{' '}
-          <Text variant="small" tone="primary" onPress={() => Linking.openURL(LEGAL_URLS.privacy)}>
+          <Text variant="small" tone="primary" onPress={() => router.push('/legal/privacy')}>
             Privacy Policy
           </Text>
           .

@@ -1,14 +1,14 @@
 import { Ionicons } from '../../src/components/ui/LucideIcon';
-import { useRouter } from 'expo-router';
-import React, { useState } from 'react';
+import { useFocusEffect, useRouter } from 'expo-router';
+import React, { useCallback, useState } from 'react';
 import { Linking, Pressable, StyleSheet, View } from 'react-native';
 import { errorMessage } from '../../src/api/client';
 import { authApi } from '../../src/api/services';
 import {
-  Avatar, Badge, Button, Card, ConfirmSheet, Divider, EmptyState, Input, PageHeading,
+  Avatar, Badge, Button, Card, ConfirmSheet, Divider, EmptyState, Input, Notice, PageHeading,
   Screen, Sheet, Text, useToast,
 } from '../../src/components/ui';
-import { CONTACT_EMAIL, LEGAL_URLS, whatsAppUrl } from '../../src/constants';
+import { CONTACT_EMAIL, whatsAppUrl } from '../../src/constants';
 import { useAuth } from '../../src/store/auth';
 import { useWishlist } from '../../src/store/wishlist';
 import { colors, radius, spacing } from '../../src/theme';
@@ -27,11 +27,23 @@ export default function ProfileScreen() {
 
   const user = useAuth((s) => s.user);
   const providerStatus = useAuth((s) => s.providerStatus);
+  const providersError = useAuth((s) => s.providersError);
   const provider = useAuth((s) => s.provider);
   const setRole = useAuth((s) => s.setRole);
   const logout = useAuth((s) => s.logout);
   const refreshAccount = useAuth((s) => s.refreshAccount);
+  const refreshProviders = useAuth((s) => s.refreshProviders);
   const clearWishlist = useWishlist((s) => s.clear);
+
+  // A business approved (or rejected) while the app sat in the background —
+  // or in a previous session that never logged back out — must not still
+  // show "Become a Mezban" here. Login and cold-launch bootstrap only run
+  // once, so this is the one place that keeps the badge honest.
+  useFocusEffect(
+    useCallback(() => {
+      if (user) void refreshProviders();
+    }, [refreshProviders, user]),
+  );
 
   const [signOutOpen, setSignOutOpen] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
@@ -155,6 +167,22 @@ export default function ProfileScreen() {
 
       {/* ── hosting ─────────────────────────────────────────────────────── */}
       <View style={styles.section}>
+        {providersError ? (
+          <Notice
+            tone="danger"
+            icon="alert-circle-outline"
+            title="Could not check your host status"
+            message={`${providersError} If you are already an approved Mezban, this is why the app is not showing your business — tap to try again.`}
+            action={
+              <Button
+                label="Try again"
+                variant="outline"
+                size="sm"
+                onPress={() => void refreshProviders()}
+              />
+            }
+          />
+        ) : null}
         {providerStatus === 'approved' ? (
           <Card onPress={() => void onSwitchToHost()} accessibilityLabel="Switch to hosting">
             <View style={styles.hostRow}>
@@ -274,19 +302,19 @@ export default function ProfileScreen() {
           <MenuRow
             icon="document-text-outline"
             label="Terms of service"
-            onPress={() => void Linking.openURL(LEGAL_URLS.terms)}
+            onPress={() => router.push('/legal/terms')}
           />
           <Divider style={styles.menuDivider} />
           <MenuRow
             icon="shield-outline"
             label="Privacy policy"
-            onPress={() => void Linking.openURL(LEGAL_URLS.privacy)}
+            onPress={() => router.push('/legal/privacy')}
           />
           <Divider style={styles.menuDivider} />
           <MenuRow
             icon="refresh-outline"
             label="Cancellation & refunds"
-            onPress={() => void Linking.openURL(LEGAL_URLS.refunds)}
+            onPress={() => router.push('/legal/cancellation')}
           />
         </Card>
       </View>

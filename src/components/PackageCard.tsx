@@ -1,16 +1,20 @@
 import { Ionicons } from './ui/LucideIcon';
+import { useQuery } from '@tanstack/react-query';
 import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
 import React, { useCallback } from 'react';
 import { Pressable, StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native';
+import { availabilityApi } from '../api/services';
 import { PLACEHOLDER_IMAGE } from '../constants';
 import { useAuth } from '../store/auth';
 import { useWishlist } from '../store/wishlist';
 import { colors, radius, shadow, spacing } from '../theme';
 import type { ProviderPackage } from '../types';
 import { pkr } from '../utils/format';
-import { durationLabel, packageImages, packagePrice, priceUnit, typeLabel } from '../utils/packages';
-import { Badge, Rating, Text, useToast } from './ui';
+import {
+  durationLabel, isSlotBased, nextTourSlot, packageImages, packagePrice, priceUnit, typeLabel,
+} from '../utils/packages';
+import { Avatar, Badge, Divider, Rating, Text, useToast } from './ui';
 
 /** Width of a card in a horizontal rail. Sized so the next card peeks. */
 export const RAIL_CARD_WIDTH = 268;
@@ -41,6 +45,19 @@ export function PackageCard({ item, layout = 'full', style }: PackageCardProps) 
   const price = packagePrice(item);
   const duration = durationLabel(item);
   const location = item.provider?.city ?? item.startLocation ?? item.meetingPoint ?? '';
+
+  const tour = isSlotBased(item.packageType);
+  const slots = useQuery({
+    queryKey: ['tour-slots', item.id],
+    queryFn: () => availabilityApi.tourSlots(item.id),
+    enabled: tour,
+    staleTime: 5 * 60_000,
+  });
+  const slot = nextTourSlot(slots.data);
+  const totalSpots = slot?.totalSpots;
+  const bookedSpots = slot?.bookedSpots ?? 0;
+  const availableSpots = slot?.availableSpots;
+  const soldOut = availableSpots != null && availableSpots <= 0;
 
   const onHeart = useCallback(async () => {
     if (!user) {
@@ -80,23 +97,12 @@ export function PackageCard({ item, layout = 'full', style }: PackageCardProps) 
         </View>
 
         <View style={styles.body}>
-          <View style={styles.titleRow}>
-            <Text variant="bodyStrong" numberOfLines={1} style={styles.title}>
-              {item.name ?? 'Untitled listing'}
-            </Text>
-            <Rating value={item.provider?.rating} compact />
-          </View>
+          <Text variant="bodyStrong" numberOfLines={2}>
+            {item.name ?? 'Untitled listing'}
+          </Text>
 
           {location || duration ? (
             <View style={styles.metaRow}>
-              {location ? (
-                <View style={styles.meta}>
-                  <Ionicons name="location-outline" size={13} color={colors.textMuted} />
-                  <Text variant="small" tone="muted" numberOfLines={1}>
-                    {location}
-                  </Text>
-                </View>
-              ) : null}
               {duration ? (
                 <View style={styles.meta}>
                   <Ionicons name="time-outline" size={13} color={colors.textMuted} />
@@ -105,14 +111,60 @@ export function PackageCard({ item, layout = 'full', style }: PackageCardProps) 
                   </Text>
                 </View>
               ) : null}
+              {location ? (
+                <View style={styles.meta}>
+                  <Ionicons name="location-outline" size={13} color={colors.textMuted} />
+                  <Text variant="small" tone="muted" numberOfLines={1}>
+                    {location}
+                  </Text>
+                </View>
+              ) : null}
             </View>
           ) : null}
 
+          {tour && totalSpots ? (
+            <View style={styles.spots}>
+              <Ionicons name="people-outline" size={12} color={colors.textMuted} />
+              <Text variant="caption" tone={soldOut ? 'danger' : 'muted'} style={styles.spotsText}>
+                {soldOut ? 'Sold out' : `${bookedSpots}/${totalSpots} booked`}
+              </Text>
+              <View style={styles.spotsTrack}>
+                <View
+                  style={[
+                    styles.spotsFill,
+                    { width: `${Math.min(100, (bookedSpots / totalSpots) * 100)}%` },
+                    soldOut && styles.spotsFillFull,
+                  ]}
+                />
+              </View>
+            </View>
+          ) : null}
+
+          {item.provider ? (
+            <>
+              <Divider style={styles.divider} />
+              <View style={styles.footerRow}>
+                <Avatar uri={item.provider.logoUrl} name={item.provider.name} size={22} />
+                <Text variant="small" tone="secondary" numberOfLines={1} style={styles.flex}>
+                  {item.provider.name ?? 'Host'}
+                </Text>
+                {item.provider.isApproved ? (
+                  <Ionicons name="checkmark-circle" size={13} color={colors.success} />
+                ) : null}
+                <Rating value={item.provider?.rating} compact />
+              </View>
+            </>
+          ) : null}
+
           <View style={styles.priceRow}>
-            <Text variant="subheading">{pkr(price)}</Text>
-            <Text variant="small" tone="muted">
-              {priceUnit(item.packageType)}
-            </Text>
+            <View style={styles.priceGroup}>
+              <Text variant="subheading" numberOfLines={1}>
+                {pkr(price)}
+              </Text>
+              <Text variant="small" tone="muted" numberOfLines={1}>
+                {priceUnit(item.packageType)}
+              </Text>
+            </View>
             {item.isInstantBook ? (
               <View style={styles.instant}>
                 <Ionicons name="flash" size={11} color={colors.primary} />
@@ -176,13 +228,39 @@ const styles = StyleSheet.create({
   typeBadge: { position: 'absolute', left: spacing.md, bottom: spacing.md },
 
   body: { padding: spacing.md, gap: spacing.xs },
-  titleRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
-  title: { flex: 1 },
+  flex: { flex: 1 },
 
   metaRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, flexWrap: 'wrap' },
   meta: { flexDirection: 'row', alignItems: 'center', gap: 3, flexShrink: 1 },
 
-  priceRow: { flexDirection: 'row', alignItems: 'baseline', gap: spacing.xs, marginTop: 2 },
+  // The "Sold out"/"booked" capacity readout — kept close to the website's
+  // fraction-and-bar chip so a tour reads the same on both clients.
+  spots: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs, marginTop: 2 },
+  spotsText: { flexShrink: 0 },
+  spotsTrack: {
+    flex: 1,
+    height: 4,
+    borderRadius: radius.full,
+    backgroundColor: colors.surfaceMuted,
+    overflow: 'hidden',
+  },
+  spotsFill: { height: '100%', borderRadius: radius.full, backgroundColor: colors.primary },
+  spotsFillFull: { backgroundColor: colors.danger },
+
+  divider: { marginVertical: spacing.xs },
+  footerRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
+
+  priceRow: {
+    flexDirection: 'row',
+    alignItems: 'baseline',
+    flexWrap: 'wrap',
+    gap: spacing.xs,
+    rowGap: 4,
+    marginTop: 2,
+  },
+  // Own row: price and unit must shrink and truncate together rather than
+  // splitting across lines, but can cede space to the Instant badge.
+  priceGroup: { flexDirection: 'row', alignItems: 'baseline', gap: spacing.xs, flexShrink: 1 },
   instant: {
     flexDirection: 'row',
     alignItems: 'center',

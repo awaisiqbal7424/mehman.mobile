@@ -1,4 +1,4 @@
-import type { ProviderPackage } from '../types';
+import type { PackageAvailability, ProviderPackage } from '../types';
 
 /**
  * Central helpers for the four marketplace package types. Ported from the
@@ -86,6 +86,11 @@ export function durationLabel(pkg: Pick<ProviderPackage, 'durationDays' | 'durat
   if (!days && !nights) return '';
   if (days && nights) return `${days}D / ${nights}N`;
   return days ? `${days} days` : `${nights} nights`;
+}
+
+/** The nearest bookable departure, for the "spots left" indicator on a tour card. */
+export function nextTourSlot(slots?: PackageAvailability[]): PackageAvailability | undefined {
+  return slots?.find((s) => s.isAvailable !== false);
 }
 
 /** Booking statuses, with the tone each should be shown in. */

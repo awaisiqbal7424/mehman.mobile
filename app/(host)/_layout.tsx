@@ -32,8 +32,8 @@ export default function HostTabsLayout() {
           name="index"
           options={{
             title: 'Today',
-            tabBarIcon: ({ color, focused }) => (
-              <House size={22} color={String(color)} weight={focused ? 'bold' : 'regular'} />
+            tabBarIcon: ({ color, focused, size }) => (
+              <House size={size} color={String(color)} weight={focused ? 'bold' : 'regular'} />
             ),
           }}
         />
@@ -41,8 +41,8 @@ export default function HostTabsLayout() {
           name="bookings"
           options={{
             title: 'Bookings',
-            tabBarIcon: ({ color, focused }) => (
-              <CalendarBlank size={21} color={String(color)} weight={focused ? 'bold' : 'regular'} />
+            tabBarIcon: ({ color, focused, size }) => (
+              <CalendarBlank size={size} color={String(color)} weight={focused ? 'bold' : 'regular'} />
             ),
           }}
         />
@@ -50,8 +50,8 @@ export default function HostTabsLayout() {
           name="calendar"
           options={{
             title: 'Calendar',
-            tabBarIcon: ({ color, focused }) => (
-              <Calendar size={21} color={String(color)} weight={focused ? 'bold' : 'regular'} />
+            tabBarIcon: ({ color, focused, size }) => (
+              <Calendar size={size} color={String(color)} weight={focused ? 'bold' : 'regular'} />
             ),
           }}
         />
@@ -59,8 +59,8 @@ export default function HostTabsLayout() {
           name="listings"
           options={{
             title: 'Listings',
-            tabBarIcon: ({ color, focused }) => (
-              <SquaresFour size={21} color={String(color)} weight={focused ? 'bold' : 'regular'} />
+            tabBarIcon: ({ color, focused, size }) => (
+              <SquaresFour size={size} color={String(color)} weight={focused ? 'bold' : 'regular'} />
             ),
           }}
         />
@@ -68,8 +68,8 @@ export default function HostTabsLayout() {
           name="more"
           options={{
             title: 'More',
-            tabBarIcon: ({ color, focused }) => (
-              <DotsThree size={22} color={String(color)} weight={focused ? 'bold' : 'regular'} />
+            tabBarIcon: ({ color, focused, size }) => (
+              <DotsThree size={size} color={String(color)} weight={focused ? 'bold' : 'regular'} />
             ),
           }}
         />

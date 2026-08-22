@@ -2,7 +2,7 @@ import {
   ArrowLeft, ArrowRight, ArrowUUpLeft, Bell, Briefcase, Calendar, CalendarBlank,
   Check, CheckCircle, ChatCircle, CloudSlash, Compass, Copy, DotsThree,
   Eye, EyeSlash, Heart, House, Info, Image, Images, Lightbulb, List, MapPin,
-  MapTrifold, Megaphone, MagnifyingGlass, PaperPlaneTilt, Plus, Receipt,
+  MapTrifold, Megaphone, MagnifyingGlass, Minus, PaperPlaneTilt, Plus, Receipt,
   Scales, SealCheck, Sparkle, Star, Tag, Timer, Trash, User, Users,
   WarningCircle, X, XCircle, IconProps,
 } from 'phosphor-react-native';
@@ -12,6 +12,7 @@ import Svg, { Path } from 'react-native-svg';
 
 const ICONS = {
   add: Plus,
+  remove: Minus,
   'alert-circle': WarningCircle,
   'alert-circle-outline': WarningCircle,
   'information-circle': Info,

@@ -1,10 +1,10 @@
 import { useQuery } from '@tanstack/react-query';
 import { useRouter } from 'expo-router';
-import React from 'react';
+import React, { useMemo, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { messageApi } from '../../src/api/services';
 import {
-  Avatar, Card, CardSkeleton, EmptyState, ErrorState, PageHeading, Screen, Text,
+  Avatar, Card, CardSkeleton, EmptyState, ErrorState, IconButton, Input, PageHeading, Screen, Text,
 } from '../../src/components/ui';
 import { useAuth } from '../../src/store/auth';
 import { colors, spacing } from '../../src/theme';
@@ -22,6 +22,8 @@ import { formatRelative } from '../../src/utils/format';
 export default function InboxScreen() {
   const router = useRouter();
   const user = useAuth((s) => s.user);
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [query, setQuery] = useState('');
 
   const conversations = useQuery({
     queryKey: ['conversations', user?.id],
@@ -36,6 +38,18 @@ export default function InboxScreen() {
     enabled: Boolean(user),
     refetchInterval: 60_000,
   });
+
+  const filtered = useMemo(() => {
+    const list = conversations.data ?? [];
+    const q = query.trim().toLowerCase();
+    if (!q) return list;
+    return list.filter((conversation) => conversationName(conversation).toLowerCase().includes(q));
+  }, [conversations.data, query]);
+
+  const toggleSearch = () => {
+    setSearchOpen((open) => !open);
+    setQuery('');
+  };
 
   if (!user) {
     return (
@@ -54,15 +68,39 @@ export default function InboxScreen() {
 
   return (
     <Screen scroll refreshing={conversations.isRefetching} onRefresh={() => void conversations.refetch()}>
-      <PageHeading title="Inbox" subtitle="Your conversations with hosts" />
+      <PageHeading
+        title="Inbox"
+        subtitle="Your conversations with hosts"
+        right={
+          <IconButton
+            icon={searchOpen ? 'close' : 'search'}
+            accessibilityLabel={searchOpen ? 'Close search' : 'Search conversations'}
+            onPress={toggleSearch}
+          />
+        }
+      />
+
+      {searchOpen ? (
+        <View style={styles.searchField}>
+          <Input
+            icon="search"
+            placeholder="Search by host name"
+            value={query}
+            onChangeText={setQuery}
+            autoFocus
+            autoCorrect={false}
+            returnKeyType="search"
+          />
+        </View>
+      ) : null}
 
       <View style={styles.list}>
         {conversations.isLoading ? (
           <CardSkeleton count={3} />
         ) : conversations.isError ? (
           <ErrorState message="We could not load your messages." onRetry={() => void conversations.refetch()} />
-        ) : conversations.data?.length ? (
-          conversations.data.map((conversation) => (
+        ) : filtered.length ? (
+          filtered.map((conversation) => (
             <ConversationRow
               key={conversation.id}
               conversation={conversation}
@@ -70,6 +108,12 @@ export default function InboxScreen() {
               onPress={() => router.push(`/chat/${conversation.id}`)}
             />
           ))
+        ) : conversations.data?.length ? (
+          <EmptyState
+            icon="search-outline"
+            title="No matches"
+            message="Nobody in your inbox matches that name."
+          />
         ) : (
           <EmptyState
             icon="chatbubble-ellipses-outline"
@@ -84,6 +128,14 @@ export default function InboxScreen() {
   );
 }
 
+/** The list endpoint does not join the provider, so the host's own name is
+ * the best label available without a second request per row. */
+function conversationName(conversation: Conversation): string {
+  return conversation.guest?.firstName
+    ? `${conversation.guest.firstName} ${conversation.guest.lastName ?? ''}`.trim()
+    : 'Host';
+}
+
 function ConversationRow({
   conversation, unread, onPress,
 }: {
@@ -91,11 +143,7 @@ function ConversationRow({
   unread: number;
   onPress: () => void;
 }) {
-  // The list endpoint does not join the provider, so the host's own name is the
-  // best label available without a second request per row.
-  const name = conversation.guest?.firstName
-    ? `${conversation.guest.firstName} ${conversation.guest.lastName ?? ''}`.trim()
-    : 'Host';
+  const name = conversationName(conversation);
 
   return (
     <Card padded={false} onPress={onPress} accessibilityLabel={`Conversation with ${name}`}>
@@ -122,6 +170,7 @@ function ConversationRow({
 
 const styles = StyleSheet.create({
   flex: { flex: 1 },
+  searchField: { paddingHorizontal: spacing.lg, marginBottom: spacing.sm },
   list: { paddingHorizontal: spacing.lg, gap: spacing.md },
   row: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, padding: spacing.md },
   rowBody: { flex: 1, gap: 2 },

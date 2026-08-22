@@ -32,6 +32,8 @@ export default function ChatScreen() {
   const user = useAuth((s) => s.user);
   const [draft, setDraft] = useState('');
   const [sending, setSending] = useState(false);
+  /** Drives the pill → rounded-rectangle switch on the composer as it grows past one line. */
+  const [inputHeight, setInputHeight] = useState(44);
   /** Messages posted from this device that the server has not echoed yet. */
   const [pending, setPending] = useState<Message[]>([]);
   const listRef = useRef<FlatList<Message>>(null);
@@ -81,6 +83,7 @@ export default function ChatScreen() {
     };
 
     setDraft('');
+    setInputHeight(44);
     setPending((current) => [...current, optimistic]);
     setSending(true);
 
@@ -171,9 +174,10 @@ export default function ChatScreen() {
         {/* ── composer ────────────────────────────────────────────────── */}
         <View style={[styles.composer, { paddingBottom: Math.max(insets.bottom, spacing.md) }]}>
           <TextInput
-            style={styles.input}
+            style={[styles.input, { borderRadius: inputHeight > 50 ? radius.xl : radius.full }]}
             value={draft}
             onChangeText={setDraft}
+            onContentSizeChange={(e) => setInputHeight(e.nativeEvent.contentSize.height)}
             placeholder="Write a message…"
             placeholderTextColor={colors.textMuted}
             multiline
@@ -248,9 +252,9 @@ const styles = StyleSheet.create({
     paddingTop: spacing.md,
     paddingBottom: spacing.md,
     backgroundColor: colors.surfaceMuted,
-    // Pill until the message needs a second line, then it eases into a
-    // rounded rectangle rather than stretching the curve out of shape.
-    borderRadius: radius.full,
+    // Border radius is set inline from `inputHeight`: a pill for one line,
+    // easing into a rounded rectangle once the message wraps, rather than
+    // stretching a fixed pill curve into a stadium shape as it grows.
     color: colors.text,
     ...typeScale.body,
   },

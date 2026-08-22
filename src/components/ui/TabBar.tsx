@@ -131,7 +131,9 @@ function TabItem({
       style={styles.item}
     >
       <View style={styles.iconWrap}>
-        {icon?.({ focused, color: tint, size: 22 })}
+        {/* The icon carries the tab's identity; the label under it is a
+            caption for anyone still learning the icons, not the focus. */}
+        {icon?.({ focused, color: tint, size: 28 })}
         {badge !== undefined && badge !== null ? (
           <View style={styles.badge}>
             <Text variant="caption" style={styles.badgeText}>
@@ -140,7 +142,7 @@ function TabItem({
           </View>
         ) : null}
       </View>
-      <Text variant="caption" style={[styles.label, { color: tint }]} numberOfLines={1}>
+      <Text style={[styles.label, { color: tint }]} numberOfLines={1}>
         {label}
       </Text>
     </Pressable>
@@ -175,8 +177,8 @@ const styles = StyleSheet.create({
     minHeight: 56,
     paddingVertical: spacing.sm,
   },
-  iconWrap: { alignItems: 'center', justifyContent: 'center', width: 46, height: 24, position: 'relative' },
-  label: { fontSize: 12, lineHeight: 16, letterSpacing: 0, textTransform: 'none' },
+  iconWrap: { alignItems: 'center', justifyContent: 'center', width: 46, height: 30, position: 'relative' },
+  label: { fontSize: 10, lineHeight: 13, letterSpacing: 0, textTransform: 'none' },
   badge: {
     position: 'absolute',
     top: -4,

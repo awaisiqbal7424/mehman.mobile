@@ -52,9 +52,3 @@ export const SERVICE_FEE_LABEL = `${(SERVICE_FEE_RATE * 100).toFixed(0)}%`;
 /** Fallback imagery when a listing has no photo of its own. */
 export const PLACEHOLDER_IMAGE =
   'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=1200&q=70';
-
-export const LEGAL_URLS = {
-  terms: 'https://mehman.co/terms',
-  privacy: 'https://mehman.co/privacy',
-  refunds: 'https://mehman.co/cancellation-policy',
-};

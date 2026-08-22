@@ -1,6 +1,6 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { create } from 'zustand';
-import { clearToken, hydrateToken } from '../api/client';
+import { clearToken, errorMessage, hydrateToken } from '../api/client';
 import { authApi, hostApi } from '../api/services';
 import type { AppRole, LoginRequest, ProviderStatus, RegisterRequest, ServiceProvider, User } from '../types';
 
@@ -32,6 +32,13 @@ interface AuthState {
   /** The business the host panel is currently acting as. */
   provider: ServiceProvider | null;
   providerStatus: ProviderStatus;
+  /**
+   * Set when the last `/api/provider/my` lookup failed outright (network,
+   * 500, an unexpected 403 — anything that is not "this account genuinely
+   * has no business"). A silent catch here is how an approved Mezban ends up
+   * looking like a guest with no way to tell why.
+   */
+  providersError: string | null;
   /** Which half of the app is on screen. */
   role: AppRole;
 
@@ -52,8 +59,23 @@ const signedOut = {
   providers: [] as ServiceProvider[],
   provider: null,
   providerStatus: 'none' as ProviderStatus,
+  providersError: null as string | null,
   role: 'guest' as AppRole,
 };
+
+/**
+ * Fetches the account's businesses, but never lets a genuine failure look
+ * like "no business" — those two used to be indistinguishable, which is how
+ * an approved Mezban could end up stuck on "Become a Mezban" with nothing in
+ * the UI to explain why.
+ */
+async function loadProviders(): Promise<{ providers: ServiceProvider[]; providersError: string | null }> {
+  try {
+    return { providers: await hostApi.myProviders(), providersError: null };
+  } catch (err) {
+    return { providers: [], providersError: errorMessage(err, 'Could not check your host status.') };
+  }
+}
 
 export const useAuth = create<AuthState>((set, get) => ({
   initialising: true,
@@ -78,13 +100,14 @@ export const useAuth = create<AuthState>((set, get) => ({
       const savedRole = (await AsyncStorage.getItem(ROLE_KEY)) as AppRole | null;
       set({ user });
 
-      const providers = await hostApi.myProviders().catch(() => [] as ServiceProvider[]);
+      const { providers, providersError } = await loadProviders();
       const resolved = resolveProvider(providers);
+      if (providersError) console.warn('[auth] /api/provider/my failed on bootstrap:', providersError);
 
       // Only restore the host view if they still have an approved business.
       const role: AppRole = savedRole === 'host' && resolved.status === 'approved' ? 'host' : 'guest';
 
-      set({ providers, ...resolved, role, initialising: false });
+      set({ providers, ...resolved, providersError, role, initialising: false });
     } catch {
       await clearToken();
       set({ ...signedOut, initialising: false });
@@ -94,10 +117,11 @@ export const useAuth = create<AuthState>((set, get) => ({
   login: async (credentials) => {
     await authApi.login(credentials);
     const user = await authApi.getAccount();
-    const providers = await hostApi.myProviders().catch(() => [] as ServiceProvider[]);
+    const { providers, providersError } = await loadProviders();
     const resolved = resolveProvider(providers);
+    if (providersError) console.warn('[auth] /api/provider/my failed on login:', providersError);
 
-    set({ user, providers, ...resolved, role: 'guest', initialising: false });
+    set({ user, providers, ...resolved, providersError, role: 'guest', initialising: false });
     return user;
   },
 
@@ -124,14 +148,18 @@ export const useAuth = create<AuthState>((set, get) => ({
     }
   },
 
-  /** Used after host onboarding, when a brand-new business should appear. */
+  /** Used after host onboarding, and whenever the profile screen regains focus. */
   refreshProviders: async () => {
-    try {
-      const providers = await hostApi.myProviders();
-      set({ providers, ...resolveProvider(providers) });
-    } catch {
-      /* a failed refresh must never be reported as a failed mutation */
+    const { providers, providersError } = await loadProviders();
+    if (providersError) {
+      console.warn('[auth] /api/provider/my failed on refresh:', providersError);
+      // Keep the last known providers/status on a failed refresh — only the
+      // error banner updates, so a blip does not bounce someone back to
+      // "Become a Mezban" while their real status is unchanged.
+      set({ providersError });
+      return;
     }
+    set({ providers, ...resolveProvider(providers), providersError: null });
   },
 
   setRole: async (role) => {

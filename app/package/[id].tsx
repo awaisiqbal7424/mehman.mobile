@@ -1,11 +1,12 @@
 import { Ionicons } from '../../src/components/ui/LucideIcon';
 import { useQuery } from '@tanstack/react-query';
+import { LinearGradient } from 'expo-linear-gradient';
 import { Image } from 'expo-image';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useCallback, useMemo, useState } from 'react';
-import { Dimensions, Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, useWindowDimensions, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { availabilityApi, messageApi, packageApi, reviewApi } from '../../src/api/services';
+import { availabilityApi, messageApi, packageApi, providerApi, reviewApi } from '../../src/api/services';
 import { Calendar, type DateRange } from '../../src/components/Calendar';
 import {
   Avatar, Badge, Button, Card, Divider, EmptyState, ErrorState, FooterBar, IconButton,
@@ -14,15 +15,18 @@ import {
 import { PLACEHOLDER_IMAGE, serviceFeeFor, SERVICE_FEE_LABEL } from '../../src/constants';
 import { useAuth } from '../../src/store/auth';
 import { useWishlist } from '../../src/store/wishlist';
-import { colors, radius, spacing } from '../../src/theme';
+import { colors, palette, radius, spacing } from '../../src/theme';
 import type { PackageAvailability } from '../../src/types';
 import { formatTravelDate, nightsBetween, pkr, plural, toApiDate } from '../../src/utils/format';
 import {
   durationLabel, isSlotBased, packageImages, packagePrice, parseJsonArray, priceUnit, typeLabel,
 } from '../../src/utils/packages';
 
-const { width: SCREEN_WIDTH } = Dimensions.get('window');
-const HERO_HEIGHT = 320;
+/** Hero height as a share of screen width, clamped so very narrow or very wide
+ * phones both get a gallery that reads as a photo rather than a strip or a slab. */
+const HERO_ASPECT = 0.85;
+const HERO_MIN_HEIGHT = 260;
+const HERO_MAX_HEIGHT = 380;
 
 /**
  * A listing in full.
@@ -38,6 +42,8 @@ export default function PackageDetailScreen() {
   const router = useRouter();
   const toast = useToast();
   const insets = useSafeAreaInsets();
+  const { width: screenWidth } = useWindowDimensions();
+  const heroHeight = Math.min(HERO_MAX_HEIGHT, Math.max(HERO_MIN_HEIGHT, screenWidth * HERO_ASPECT));
 
   const user = useAuth((s) => s.user);
   const saved = useWishlist((s) => Boolean(id && s.entries[id]));
@@ -56,6 +62,18 @@ export default function PackageDetailScreen() {
   });
 
   const slotBased = isSlotBased(pkg.data?.packageType);
+
+  /**
+   * Fetched independently rather than trusting `pkg.data.provider` — the
+   * search endpoint embeds it but the single-package endpoint does not
+   * reliably, which is how a listing could end up with no Mezban card at all.
+   */
+  const providerQuery = useQuery({
+    queryKey: ['provider-for-package', pkg.data?.providerId],
+    queryFn: () => providerApi.getById(pkg.data!.providerId!),
+    enabled: Boolean(pkg.data?.providerId),
+  });
+  const host = providerQuery.data ?? pkg.data?.provider;
 
   const slots = useQuery({
     queryKey: ['tour-slots', id],
@@ -124,7 +142,7 @@ export default function PackageDetailScreen() {
       return;
     }
     const providerId = pkg.data?.providerId;
-    const hostId = pkg.data?.provider?.providerOwnerId ?? pkg.data?.providerOwnerId;
+    const hostId = host?.providerOwnerId ?? pkg.data?.providerOwnerId;
     if (!providerId || !hostId) {
       toast.error('This host cannot be messaged just yet.');
       return;
@@ -135,7 +153,7 @@ export default function PackageDetailScreen() {
     } catch {
       toast.error('We could not open that conversation.');
     }
-  }, [id, pkg.data, router, toast, user]);
+  }, [host, id, pkg.data?.providerId, router, toast, user]);
 
   const onContinue = useCallback(() => {
     if (!user) {
@@ -173,6 +191,7 @@ export default function PackageDetailScreen() {
       <Screen
         scroll
         edges="none"
+        background={colors.surface}
         footer={
           <FooterBar>
             <View style={styles.bar}>
@@ -194,20 +213,20 @@ export default function PackageDetailScreen() {
         }
       >
         {/* ── gallery ─────────────────────────────────────────────────── */}
-        <View style={styles.hero}>
+        <View style={[styles.hero, { height: heroHeight }]}>
           <ScrollView
             horizontal
             pagingEnabled
             showsHorizontalScrollIndicator={false}
             onMomentumScrollEnd={(e) =>
-              setHeroIndex(Math.round(e.nativeEvent.contentOffset.x / SCREEN_WIDTH))
+              setHeroIndex(Math.round(e.nativeEvent.contentOffset.x / screenWidth))
             }
           >
             {images.map((uri, index) => (
               <Image
                 key={`${uri}-${index}`}
                 source={{ uri }}
-                style={styles.heroImage}
+                style={[styles.heroImage, { width: screenWidth, height: heroHeight }]}
                 contentFit="cover"
                 transition={250}
               />
@@ -231,11 +250,21 @@ export default function PackageDetailScreen() {
           </View>
 
           {images.length > 1 ? (
-            <View style={styles.dots}>
-              {images.map((uri, index) => (
-                <View key={`${uri}-dot-${index}`} style={[styles.dot, index === heroIndex && styles.dotOn]} />
-              ))}
-            </View>
+            <>
+              {/* A bright photo (snow, sky, sand) can wash white dots out
+                  completely — the scrim guarantees contrast regardless of
+                  what is behind it. */}
+              <LinearGradient
+                colors={['transparent', colors.scrim]}
+                style={styles.heroScrim}
+                pointerEvents="none"
+              />
+              <View style={styles.dots}>
+                {images.map((uri, index) => (
+                  <View key={`${uri}-dot-${index}`} style={[styles.dot, index === heroIndex && styles.dotOn]} />
+                ))}
+              </View>
+            </>
           ) : null}
         </View>
 
@@ -252,11 +281,11 @@ export default function PackageDetailScreen() {
           </Text>
 
           <View style={styles.metaRow}>
-            {item.provider?.city ? (
+            {host?.city ? (
               <View style={styles.meta}>
                 <Ionicons name="location-outline" size={15} color={colors.textMuted} />
                 <Text variant="small" tone="secondary">
-                  {item.provider.city}
+                  {host.city}
                 </Text>
               </View>
             ) : null}
@@ -276,36 +305,46 @@ export default function PackageDetailScreen() {
                 </Text>
               </View>
             ) : null}
-            <Rating value={item.provider?.rating} count={reviews.data?.length} />
+            <Rating value={host?.rating} count={reviews.data?.length} />
           </View>
 
-          {/* ── host ──────────────────────────────────────────────────── */}
-          {item.provider ? (
-            <Card style={styles.hostCard} onPress={() => router.push(`/provider/${item.providerId}`)}>
-              <View style={styles.hostRow}>
-                <Avatar uri={item.provider.logoUrl} name={item.provider.name} size={48} />
+          {/* ── Mezban details ────────────────────────────────────────────
+              Every listing shows who is hosting it and a way to chat with
+              them — direct phone/email stay hidden until a booking exists,
+              so nothing steers a guest around the platform. */}
+          {host ? (
+            <Card style={styles.hostCard}>
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel={`View ${host.name ?? 'this host'}'s profile`}
+                onPress={() => router.push(`/provider/${item.providerId}`)}
+                style={styles.hostRow}
+              >
+                <Avatar uri={host.logoUrl} name={host.name} size={48} />
                 <View style={styles.flex}>
                   <View style={styles.hostName}>
                     <Text variant="bodyStrong" numberOfLines={1}>
-                      {item.provider.name}
+                      {host.name}
                     </Text>
-                    {item.provider.isApproved ? (
+                    {host.isApproved ? (
                       <Ionicons name="checkmark-circle" size={15} color={colors.success} />
                     ) : null}
                   </View>
                   <Text variant="small" tone="muted" numberOfLines={1}>
-                    {item.provider.isTourOperator ? 'Tour operator' : 'Host'}
-                    {item.provider.city ? ` · ${item.provider.city}` : ''}
+                    {host.isTourOperator ? 'Tour operator' : 'Host'}
+                    {host.city ? ` · ${host.city}` : ''}
                   </Text>
                 </View>
-                <IconButton
-                  icon="chatbubble-ellipses-outline"
-                  accessibilityLabel="Message this host"
-                  background={colors.primarySoft}
-                  color={colors.primary}
-                  onPress={onMessageHost}
-                />
-              </View>
+                <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />
+              </Pressable>
+              <Button
+                label="Chat with them"
+                variant="outline"
+                icon="chatbubble-ellipses-outline"
+                fullWidth
+                style={styles.hostChatButton}
+                onPress={() => void onMessageHost()}
+              />
             </Card>
           ) : null}
 
@@ -319,65 +358,89 @@ export default function PackageDetailScreen() {
           ) : null}
 
           {highlights.length ? (
-            <Block title="Highlights">
-              {highlights.map((line, index) => (
-                <BulletLine key={`${line}-${index}`} icon="sparkles-outline" text={line} />
-              ))}
-            </Block>
+            <SectionPanel title="Highlights" icon="sparkles-outline" tone="primary">
+              <View style={styles.chips}>
+                {highlights.map((line, index) => (
+                  <View key={`${line}-${index}`} style={styles.chip}>
+                    <Text variant="small" style={styles.onDark}>
+                      {line}
+                    </Text>
+                  </View>
+                ))}
+              </View>
+            </SectionPanel>
+          ) : null}
+
+          {includes.length ? (
+            <SectionPanel title="What's included" icon="checkmark-circle" tone="success">
+              <View style={styles.featureList}>
+                {includes.map((line, index) => (
+                  <View key={`inc-${index}`} style={styles.featureRow}>
+                    <Ionicons name="checkmark-circle" size={16} color={palette.green600} style={styles.featureIcon} />
+                    <Text variant="small" style={[styles.flex, styles.onDark]}>
+                      {line}
+                    </Text>
+                  </View>
+                ))}
+              </View>
+            </SectionPanel>
+          ) : null}
+
+          {excludes.length ? (
+            <SectionPanel title="Not included" icon="close-circle" tone="neutral">
+              <View style={styles.featureList}>
+                {excludes.map((line, index) => (
+                  <View key={`exc-${index}`} style={styles.featureRow}>
+                    <Ionicons name="close-circle" size={16} color="rgba(255,255,255,0.5)" style={styles.featureIcon} />
+                    <Text variant="small" style={[styles.flex, styles.onDarkMuted]}>
+                      {line}
+                    </Text>
+                  </View>
+                ))}
+              </View>
+            </SectionPanel>
+          ) : null}
+
+          {amenities.length ? (
+            <SectionPanel title="What this place offers" icon="star-outline" tone="gold">
+              <View style={styles.featureList}>
+                {amenities.map((amenity, index) => (
+                  <View key={`${amenity}-${index}`} style={styles.featureRow}>
+                    <Ionicons name="checkmark-circle-outline" size={16} color={palette.orange300} style={styles.featureIcon} />
+                    <Text variant="small" style={[styles.flex, styles.onDark]}>
+                      {amenity}
+                    </Text>
+                  </View>
+                ))}
+              </View>
+            </SectionPanel>
           ) : null}
 
           {itinerary.length ? (
-            <Block title="Itinerary">
+            <SectionPanel title="Itinerary" icon="compass-outline" tone="neutral">
               {itinerary.map((day, index) => (
                 <View key={`day-${index}`} style={styles.itineraryDay}>
-                  <View style={styles.itineraryMarker}>
-                    <Text variant="caption" tone="inverse">
-                      {day.day ?? index + 1}
-                    </Text>
+                  <View style={styles.itineraryTrack}>
+                    <View style={styles.itineraryMarker}>
+                      <Text variant="caption" tone="inverse">
+                        {day.day ?? index + 1}
+                      </Text>
+                    </View>
+                    {index !== itinerary.length - 1 ? <View style={styles.itineraryLine} /> : null}
                   </View>
-                  <View style={styles.flex}>
-                    <Text variant="bodyStrong">{day.title ?? `Day ${day.day ?? index + 1}`}</Text>
+                  <View style={[styles.flex, styles.itineraryContent]}>
+                    <Text variant="bodyStrong" style={styles.onDark}>
+                      {day.title ?? `Day ${day.day ?? index + 1}`}
+                    </Text>
                     {day.description ? (
-                      <Text variant="small" tone="secondary" style={styles.itineraryText}>
+                      <Text variant="small" style={[styles.itineraryText, styles.onDarkMuted]}>
                         {day.description}
                       </Text>
                     ) : null}
                   </View>
                 </View>
               ))}
-            </Block>
-          ) : null}
-
-          {amenities.length ? (
-            <Block title="What this place offers">
-              <View style={styles.amenities}>
-                {amenities.map((amenity, index) => (
-                  <View key={`${amenity}-${index}`} style={styles.amenity}>
-                    <Ionicons name="checkmark-circle-outline" size={16} color={colors.success} />
-                    <Text variant="small">{amenity}</Text>
-                  </View>
-                ))}
-              </View>
-            </Block>
-          ) : null}
-
-          {includes.length || excludes.length ? (
-            <Block title="What's included">
-              {includes.map((line, index) => (
-                <BulletLine key={`inc-${index}`} icon="checkmark-circle" text={line} tone="success" />
-              ))}
-              {excludes.length ? (
-                <>
-                  <Divider />
-                  <Text variant="smallStrong" tone="muted" style={styles.excludeHead}>
-                    NOT INCLUDED
-                  </Text>
-                  {excludes.map((line, index) => (
-                    <BulletLine key={`exc-${index}`} icon="close-circle" text={line} tone="danger" />
-                  ))}
-                </>
-              ) : null}
-            </Block>
+            </SectionPanel>
           ) : null}
 
           {/* ── logistics ─────────────────────────────────────────────── */}
@@ -572,30 +635,56 @@ function Block({ title, children }: { title: string; children: React.ReactNode }
   );
 }
 
-function BulletLine({
-  icon, text, tone = 'muted',
+const PANEL_TONES = {
+  primary: { iconBg: colors.primary, iconTint: palette.white, glow: 'rgba(234,88,12,0.35)' },
+  success: { iconBg: 'rgba(5,150,105,0.18)', iconTint: '#34D399', glow: 'rgba(5,150,105,0.22)' },
+  gold: { iconBg: palette.orange300, iconTint: palette.ink900, glow: 'rgba(253,186,116,0.22)' },
+  neutral: { iconBg: 'rgba(255,255,255,0.1)', iconTint: 'rgba(255,255,255,0.8)', glow: 'rgba(120,113,108,0.22)' },
+} as const;
+
+/**
+ * One panel design for every trip-detail section — a deep stone card with a
+ * single coloured glow and an icon tile beside the title — so Highlights,
+ * Itinerary, and What's included read as one set rather than four unrelated
+ * boxes, matching the web listing page.
+ */
+function SectionPanel({
+  title, icon, tone, children,
 }: {
+  title: string;
   icon: keyof typeof Ionicons.glyphMap;
-  text: string;
-  tone?: 'muted' | 'success' | 'danger';
+  tone: keyof typeof PANEL_TONES;
+  children: React.ReactNode;
 }) {
-  const color = { muted: colors.textMuted, success: colors.success, danger: colors.danger }[tone];
+  const { iconBg, iconTint, glow } = PANEL_TONES[tone];
   return (
-    <View style={styles.bullet}>
-      <Ionicons name={icon} size={16} color={color} style={styles.bulletIcon} />
-      <Text variant="body" tone="secondary" style={styles.flex}>
-        {text}
-      </Text>
-    </View>
+    <LinearGradient
+      colors={[palette.ink900, palette.ink900, palette.ink800]}
+      start={{ x: 0, y: 0 }}
+      end={{ x: 1, y: 1 }}
+      style={styles.panel}
+    >
+      <View style={[styles.panelGlow, { backgroundColor: glow }]} />
+      <View style={styles.panelHead}>
+        <View style={[styles.panelIconTile, { backgroundColor: iconBg }]}>
+          <Ionicons name={icon} size={18} color={iconTint} />
+        </View>
+        <Text variant="heading" style={styles.onDark}>
+          {title}
+        </Text>
+      </View>
+      {children}
+    </LinearGradient>
   );
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: colors.background },
+  root: { flex: 1, backgroundColor: colors.surface },
   flex: { flex: 1 },
 
-  hero: { height: HERO_HEIGHT, backgroundColor: colors.surfaceMuted },
-  heroImage: { width: SCREEN_WIDTH, height: HERO_HEIGHT },
+  hero: { backgroundColor: colors.surfaceMuted },
+  heroImage: {},
+  heroScrim: { position: 'absolute', left: 0, right: 0, bottom: 0, height: 88 },
   heroControls: {
     position: 'absolute',
     left: spacing.lg,
@@ -614,7 +703,7 @@ const styles = StyleSheet.create({
   dotOn: { backgroundColor: '#FFFFFF', width: 16 },
 
   body: {
-    backgroundColor: colors.background,
+    backgroundColor: colors.surface,
     borderTopLeftRadius: radius['2xl'],
     borderTopRightRadius: radius['2xl'],
     marginTop: -spacing.xl,
@@ -635,32 +724,76 @@ const styles = StyleSheet.create({
   hostCard: { marginTop: spacing.xl },
   hostRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
   hostName: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs },
+  hostChatButton: { marginTop: spacing.lg },
 
   block: { marginTop: spacing['2xl'], gap: spacing.sm },
   blockTitle: { marginBottom: spacing.xs },
 
-  bullet: { flexDirection: 'row', gap: spacing.md, alignItems: 'flex-start' },
-  bulletIcon: { marginTop: 3 },
-  excludeHead: { marginBottom: spacing.xs },
+  // The dark section cards (Highlights, Included, Itinerary, …) — one look
+  // for every "trip detail" block instead of a plain white panel each.
+  panel: {
+    marginTop: spacing['2xl'],
+    borderRadius: radius['2xl'],
+    padding: spacing.lg,
+    overflow: 'hidden',
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: 'rgba(255,255,255,0.08)',
+  },
+  panelGlow: {
+    position: 'absolute',
+    top: -60,
+    right: -60,
+    width: 160,
+    height: 160,
+    borderRadius: 80,
+  },
+  panelHead: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, marginBottom: spacing.lg },
+  panelIconTile: {
+    width: 36,
+    height: 36,
+    borderRadius: radius.md,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  onDark: { color: palette.white },
+  onDarkMuted: { color: 'rgba(255,255,255,0.65)' },
 
-  itineraryDay: { flexDirection: 'row', gap: spacing.md, marginBottom: spacing.md },
+  chips: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
+  chip: {
+    backgroundColor: 'rgba(255,255,255,0.08)',
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: 'rgba(255,255,255,0.16)',
+    borderRadius: radius.full,
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.sm,
+  },
+
+  featureList: { gap: spacing.sm },
+  featureRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: spacing.sm,
+    backgroundColor: 'rgba(255,255,255,0.06)',
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: 'rgba(255,255,255,0.1)',
+    borderRadius: radius.lg,
+    padding: spacing.md,
+  },
+  featureIcon: { marginTop: 1 },
+
+  itineraryDay: { flexDirection: 'row', gap: spacing.md },
+  itineraryTrack: { alignItems: 'center' },
   itineraryMarker: {
-    width: 26,
-    height: 26,
-    borderRadius: 13,
+    width: 30,
+    height: 30,
+    borderRadius: 15,
     backgroundColor: colors.primary,
     alignItems: 'center',
     justifyContent: 'center',
   },
+  itineraryLine: { width: 2, flex: 1, minHeight: spacing.lg, backgroundColor: 'rgba(255,255,255,0.12)', marginVertical: spacing.xs },
+  itineraryContent: { paddingBottom: spacing.lg },
   itineraryText: { marginTop: 2 },
-
-  amenities: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.md },
-  amenity: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.xs,
-    width: '46%',
-  },
 
   review: {
     gap: spacing.sm,

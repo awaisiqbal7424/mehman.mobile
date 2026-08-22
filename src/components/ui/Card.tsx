@@ -46,7 +46,7 @@ export function Section({
     <View style={[styles.section, style]}>
       <View style={styles.sectionHead}>
         <View style={styles.sectionTitles}>
-          <Text variant="heading">{title}</Text>
+          <Text variant="heading" tone="primary">{title}</Text>
           {subtitle ? (
             <Text variant="small" tone="secondary" style={styles.sectionSubtitle}>
               {subtitle}
@@ -59,12 +59,9 @@ export function Section({
             accessibilityLabel={`${action}: ${title}`}
             onPress={onAction}
             hitSlop={8}
-            style={({ pressed }) => [styles.sectionAction, pressed && { opacity: 0.6 }]}
+            style={({ pressed }) => [styles.sectionAction, pressed && { opacity: 0.75 }]}
           >
-            <Text variant="smallStrong" tone="primary">
-              {action}
-            </Text>
-            <Ionicons name="chevron-forward" size={14} color={colors.primary} />
+            <Ionicons name="arrow-forward" size={16} color={colors.textOnPrimary} />
           </Pressable>
         ) : null}
       </View>
@@ -168,7 +165,14 @@ const styles = StyleSheet.create({
   },
   sectionTitles: { flex: 1 },
   sectionSubtitle: { marginTop: 2 },
-  sectionAction: { flexDirection: 'row', alignItems: 'center', gap: 2 },
+  sectionAction: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: colors.primary,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
 
   row: {
     flexDirection: 'row',

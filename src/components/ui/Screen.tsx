@@ -23,7 +23,7 @@ import { Text } from './Text';
  */
 export function Screen({
   children, scroll = true, refreshing, onRefresh, footer, padded = false,
-  style, contentContainerStyle, edges = 'bottom',
+  style, contentContainerStyle, edges = 'bottom', background,
 }: {
   children: React.ReactNode;
   scroll?: boolean;
@@ -35,6 +35,8 @@ export function Screen({
   contentContainerStyle?: ScrollViewProps['contentContainerStyle'];
   /** 'bottom' respects the home indicator; 'none' lets content run to the edge. */
   edges?: 'bottom' | 'none';
+  /** Replaces the usual warm gradient with a flat colour, for a screen that wants a plain page (e.g. white). */
+  background?: string;
 }) {
   const insets = useSafeAreaInsets();
   // Non-zero only inside a tab navigator, so the last card clears the pill.
@@ -77,17 +79,26 @@ export function Screen({
       // leaves a gap the height of the bar under the focused field.
       keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 0}
     >
-      <LinearGradient
-        colors={colors.backgroundGradient}
-        start={{ x: 1, y: 0 }}
-        end={{ x: 0, y: 1 }}
-        style={styles.gradient}
-      >
-        {body}
-        {footer ? (
-          <View style={[styles.footer, { paddingBottom: bottomPad }]}>{footer}</View>
-        ) : null}
-      </LinearGradient>
+      {background ? (
+        <View style={[styles.gradient, { backgroundColor: background }]}>
+          {body}
+          {footer ? (
+            <View style={[styles.footer, { paddingBottom: bottomPad }]}>{footer}</View>
+          ) : null}
+        </View>
+      ) : (
+        <LinearGradient
+          colors={colors.backgroundGradient}
+          start={{ x: 1, y: 0 }}
+          end={{ x: 0, y: 1 }}
+          style={styles.gradient}
+        >
+          {body}
+          {footer ? (
+            <View style={[styles.footer, { paddingBottom: bottomPad }]}>{footer}</View>
+          ) : null}
+        </LinearGradient>
+      )}
     </KeyboardAvoidingView>
   );
 }

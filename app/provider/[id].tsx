@@ -2,16 +2,17 @@ import { Ionicons } from '../../src/components/ui/LucideIcon';
 import { useQuery } from '@tanstack/react-query';
 import { Image } from 'expo-image';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import React from 'react';
-import { Linking, StyleSheet, View } from 'react-native';
+import React, { useCallback } from 'react';
+import { StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { packageApi, providerApi, reviewApi } from '../../src/api/services';
+import { messageApi, packageApi, providerApi, reviewApi } from '../../src/api/services';
 import { PackageCard } from '../../src/components/PackageCard';
 import {
   Avatar, Badge, Button, Card, CardSkeleton, Divider, ErrorState, IconButton, Loading,
-  Rating, Row, Screen, Text,
+  Rating, Row, Screen, Text, useToast,
 } from '../../src/components/ui';
 import { PLACEHOLDER_IMAGE } from '../../src/constants';
+import { useAuth } from '../../src/store/auth';
 import { colors, radius, spacing } from '../../src/theme';
 import { formatShortDate } from '../../src/utils/format';
 import { parseJsonArray } from '../../src/utils/packages';
@@ -27,6 +28,8 @@ export default function ProviderDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
   const insets = useSafeAreaInsets();
+  const toast = useToast();
+  const user = useAuth((s) => s.user);
 
   const provider = useQuery({
     queryKey: ['provider', id],
@@ -45,6 +48,29 @@ export default function ProviderDetailScreen() {
     queryFn: () => reviewApi.forProvider(id),
     enabled: Boolean(id),
   });
+
+  /**
+   * Chat is the only contact route offered here — direct phone/email are not
+   * shown before a booking exists, so nobody has a reason to arrange a trip
+   * outside the platform.
+   */
+  const onMessageHost = useCallback(async () => {
+    if (!user) {
+      router.push(`/sign-in?redirect=/provider/${id}`);
+      return;
+    }
+    const hostId = provider.data?.providerOwnerId;
+    if (!id || !hostId) {
+      toast.error('This host cannot be messaged just yet.');
+      return;
+    }
+    try {
+      const conversation = await messageApi.openWithProvider(user.id, hostId, id);
+      router.push(`/chat/${conversation.id}`);
+    } catch {
+      toast.error('We could not open that conversation.');
+    }
+  }, [id, provider.data?.providerOwnerId, router, toast, user]);
 
   if (provider.isLoading) return <Loading label="Loading this host…" />;
   if (provider.isError || !provider.data) {
@@ -108,28 +134,15 @@ export default function ProviderDetailScreen() {
             </Text>
           ) : null}
 
-          <View style={styles.contactRow}>
-            {host.phoneNumber ? (
-              <Button
-                label="Call"
-                variant="outline"
-                size="sm"
-                icon="call-outline"
-                style={styles.flex}
-                onPress={() => void Linking.openURL(`tel:${host.phoneNumber}`)}
-              />
-            ) : null}
-            {host.email ? (
-              <Button
-                label="Email"
-                variant="outline"
-                size="sm"
-                icon="mail-outline"
-                style={styles.flex}
-                onPress={() => void Linking.openURL(`mailto:${host.email}`)}
-              />
-            ) : null}
-          </View>
+          {/* Chat is the only contact route shown here — the host's phone
+              number and email stay private until a booking exists. */}
+          <Button
+            label="Chat with them"
+            variant="outline"
+            icon="chatbubble-ellipses-outline"
+            fullWidth
+            onPress={() => void onMessageHost()}
+          />
         </Card>
 
         {/* ── listings ──────────────────────────────────────────────────── */}
@@ -252,7 +265,6 @@ const styles = StyleSheet.create({
   nameRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs },
   tags: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.xs },
   description: { marginTop: -spacing.xs },
-  contactRow: { flexDirection: 'row', gap: spacing.md },
 
   block: { gap: spacing.md },
   blockTitle: { marginBottom: spacing.xs },
