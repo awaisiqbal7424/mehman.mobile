@@ -67,8 +67,12 @@ export default function ProviderDetailScreen() {
   const certificates = parseJsonArray<string>(host.providerCertificatesJson);
   // Guides and vehicles are not offered on any browse surface yet (see
   // SEARCH_TABS) — a host's public page should not be the one place they
-  // still slip through.
-  const liveListings = listings.data?.filter((p) => p.packageType === 'TOUR' || p.packageType === 'STAY');
+  // still slip through. The `providerId` filter is also re-applied here
+  // because the backend does not actually honor it server-side — it returns
+  // every provider's packages regardless of the query param.
+  const liveListings = listings.data?.filter(
+    (p) => (p.packageType === 'TOUR' || p.packageType === 'STAY') && p.providerId === id,
+  );
 
   return (
     <Screen scroll edges="none" refreshing={provider.isRefetching} onRefresh={() => void provider.refetch()}>

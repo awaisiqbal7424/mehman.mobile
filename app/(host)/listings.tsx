@@ -43,6 +43,12 @@ export default function HostListingsScreen() {
 
   const refresh = () => queryClient.invalidateQueries({ queryKey: ['host-listings'] });
 
+  // The backend does not actually filter `/api/provider-packages` by the
+  // `providerId` query param — it returns every provider's packages — so this
+  // filters client-side to keep a host's own listings to their own.
+  const items = (listings.data ?? []).filter((item) => item.providerId === provider?.id);
+  const live = items.filter((item) => item.isActive).length;
+
   const togglePublished = async (listing: ProviderPackage) => {
     setBusy(true);
     try {
@@ -72,9 +78,6 @@ export default function HostListingsScreen() {
       setBusy(false);
     }
   };
-
-  const items = listings.data ?? [];
-  const live = items.filter((item) => item.isActive).length;
 
   return (
     <Screen scroll refreshing={listings.isRefetching} onRefresh={() => void listings.refetch()}>

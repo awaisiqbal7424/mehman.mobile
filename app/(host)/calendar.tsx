@@ -44,11 +44,16 @@ export default function HostCalendarScreen() {
     enabled: Boolean(provider),
   });
 
-  useEffect(() => {
-    if (!selectedId && listings.data?.length) setSelectedId(listings.data[0].id);
-  }, [listings.data, selectedId]);
+  // The backend does not actually filter `/api/provider-packages` by the
+  // `providerId` query param — it returns every provider's packages — so this
+  // filters client-side to keep a host's calendar to their own listings.
+  const myListings = listings.data?.filter((item) => item.providerId === provider?.id);
 
-  const selected = listings.data?.find((item) => item.id === selectedId);
+  useEffect(() => {
+    if (!selectedId && myListings?.length) setSelectedId(myListings[0].id);
+  }, [myListings, selectedId]);
+
+  const selected = myListings?.find((item) => item.id === selectedId);
   const slotBased = isSlotBased(selected?.packageType);
 
   const slots = useQuery({
@@ -144,7 +149,7 @@ export default function HostCalendarScreen() {
     return <ErrorState message="We could not load your listings." onRetry={() => void listings.refetch()} />;
   }
 
-  if (!listings.data?.length) {
+  if (!myListings?.length) {
     return (
       <Screen scroll={false}>
         <PageHeading title="Calendar" />
@@ -165,7 +170,7 @@ export default function HostCalendarScreen() {
 
       {/* ── which listing ───────────────────────────────────────────────── */}
       <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.picker}>
-        {listings.data.map((listing) => {
+        {myListings.map((listing) => {
           const active = listing.id === selectedId;
           return (
             <Pressable
