@@ -54,7 +54,7 @@ export default function HostDashboardScreen() {
       <PageHeading title={`Salaam, ${provider?.name ?? 'host'}`} />
 
       {/* ── quick actions ───────────────────────────────────────────────── */}
-      <View style={[styles.section, styles.quickGrid]}>
+      <View style={styles.quickGrid}>
         <QuickAction
           label="Bookings"
           source={require('../../assets/calendar-date-3d.png')}
@@ -384,7 +384,7 @@ function QuickAction({
       <View style={styles.quickIcon}>
         <Image source={source} style={styles.quickImage} contentFit="contain" />
       </View>
-      <Text variant="smallStrong" numberOfLines={1}>
+      <Text variant="smallStrong" numberOfLines={1} style={styles.quickLabel}>
         {label}
       </Text>
     </Pressable>
@@ -407,10 +407,20 @@ const styles = StyleSheet.create({
   section: { paddingHorizontal: spacing.lg, marginBottom: spacing.xl, gap: spacing.md },
   sectionHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: spacing.md },
 
-  quickGrid: { flexDirection: 'row', flexWrap: 'wrap' },
-  quickItem: { width: '33.33%', alignItems: 'center', gap: spacing.xs, marginBottom: spacing.md },
-  quickIcon: { width: 64, height: 64, alignItems: 'center', justifyContent: 'center' },
-  quickImage: { width: 60, height: 60 },
+  // No `gap` here: with three fixed 33.33%-wide children per row, a flex `gap`
+  // adds on top of that 100% and pushes the third item onto its own line —
+  // spacing instead comes from quickIcon being narrower than its column.
+  quickGrid: {
+    flexDirection: 'row', flexWrap: 'wrap',
+    paddingHorizontal: spacing.lg, marginBottom: spacing.xl,
+  },
+  quickItem: { width: '33.33%', alignItems: 'center', marginBottom: spacing.lg },
+  // A percentage of the 33.33%-wide column, not a fixed pixel size, so the
+  // icon scales with however much room three-per-row actually leaves on the
+  // device instead of assuming one fixed screen width.
+  quickIcon: { width: '68%', aspectRatio: 1, alignItems: 'center', justifyContent: 'center' },
+  quickImage: { width: '100%', height: '100%' },
+  quickLabel: { marginTop: spacing.xs },
 
   earnings: { gap: 2 },
   payoutBar: { flexDirection: 'row', height: 8, borderRadius: 4, overflow: 'hidden', marginTop: spacing.lg },

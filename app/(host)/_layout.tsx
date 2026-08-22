@@ -22,7 +22,7 @@ export default function HostTabsLayout() {
   return (
     <TabBarSpaceContext.Provider value={TAB_BAR.SPACE}>
       <Tabs
-        tabBar={(props) => <FloatingTabBar {...props} />}
+        tabBar={(props) => <FloatingTabBar {...props} hideOnRoutes={['index']} />}
         screenOptions={{
           headerShown: false,
           sceneStyle: { backgroundColor: colors.background },

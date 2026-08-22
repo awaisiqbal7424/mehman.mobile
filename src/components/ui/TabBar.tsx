@@ -69,8 +69,12 @@ export const useTabBarSpace = () => useContext(TabBarSpaceContext);
  * the two tabs anyone actually alternates between, and the page's photography
  * runs to the edges underneath it instead of stopping at a grey band.
  */
-export function FloatingTabBar({ state, descriptors, navigation }: TabBarProps) {
+export function FloatingTabBar({
+  state, descriptors, navigation, hideOnRoutes,
+}: TabBarProps & { hideOnRoutes?: string[] }) {
   const insets = useSafeAreaInsets();
+
+  if (hideOnRoutes?.includes(state.routes[state.index]?.name)) return null;
 
   return (
     <View
