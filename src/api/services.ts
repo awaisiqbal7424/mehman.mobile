@@ -294,6 +294,22 @@ export const messageApi = {
     });
     return data;
   },
+  /**
+   * Deletes a conversation server-side where that is supported. The endpoint
+   * may not exist yet, so a 404/405 reports `notImplemented` — the caller
+   * still hides the thread locally either way (see `useHiddenChats`), it just
+   * cannot promise the other side stops seeing it too.
+   */
+  async removeConversation(conversationId: string): Promise<{ ok: boolean; notImplemented?: boolean }> {
+    try {
+      await api.delete(`/api/messages/conversations/${conversationId}`);
+      return { ok: true };
+    } catch (err) {
+      const status = (err as { response?: { status?: number } })?.response?.status;
+      if (status === 404 || status === 405) return { ok: false, notImplemented: true };
+      return { ok: false };
+    }
+  },
 };
 
 /* ── reviews, wishlist, payments ──────────────────────────────────────────── */

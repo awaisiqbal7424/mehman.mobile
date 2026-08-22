@@ -5,12 +5,13 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useState } from 'react';
 import { Linking, StyleSheet, View } from 'react-native';
 import { errorMessage } from '../../src/api/client';
-import { bookingApi, messageApi, paymentApi, reviewApi } from '../../src/api/services';
+import { bookingApi, paymentApi, reviewApi } from '../../src/api/services';
 import {
   Badge, Button, Card, ConfirmSheet, Divider, ErrorState, Header, Loading, Notice, Row,
   Screen, Sheet, Text, TextArea, useToast,
 } from '../../src/components/ui';
 import { PLACEHOLDER_IMAGE, whatsAppUrl } from '../../src/constants';
+import { useMessageHost } from '../../src/hooks/useMessageHost';
 import { useAuth } from '../../src/store/auth';
 import { colors, radius, spacing } from '../../src/theme';
 import { formatDateRange, formatTravelDate, pkr, plural } from '../../src/utils/format';
@@ -65,20 +66,9 @@ export default function BookingDetailScreen() {
     }
   };
 
-  const onMessageHost = async () => {
-    const providerId = booking.data?.package?.providerId;
-    const hostId = booking.data?.package?.provider?.providerOwnerId;
-    if (!user || !providerId || !hostId) {
-      toast.error('This host cannot be messaged just yet.');
-      return;
-    }
-    try {
-      const conversation = await messageApi.openWithProvider(user.id, hostId, providerId);
-      router.push(`/chat/${conversation.id}`);
-    } catch {
-      toast.error('We could not open that conversation.');
-    }
-  };
+  const messageHost = useMessageHost(`/booking/${id}`);
+  const onMessageHost = () =>
+    messageHost(booking.data?.package?.provider?.providerOwnerId, booking.data?.package?.providerId);
 
   const onSubmitReview = async () => {
     if (postingReview || !booking.data) return;

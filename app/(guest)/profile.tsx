@@ -215,12 +215,12 @@ export default function ProfileScreen() {
                 <Ionicons name="hourglass-outline" size={22} color={colors.warning} />
               </View>
               <View style={styles.flex}>
-                <Text variant="bodyStrong">Your application is with us</Text>
+                <Text variant="bodyStrong">Mezban Request Under Review</Text>
                 <Text variant="small" tone="muted">
                   We review new businesses within a couple of days.
                 </Text>
               </View>
-              <Badge label="Pending" tone="warning" />
+              <Badge label="Under review" tone="warning" />
             </View>
           </Card>
         ) : providerStatus === 'rejected' ? (

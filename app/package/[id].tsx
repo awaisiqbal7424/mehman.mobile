@@ -4,15 +4,16 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { Image } from 'expo-image';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useCallback, useMemo, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, useWindowDimensions, View } from 'react-native';
+import { Pressable, ScrollView, Share, StyleSheet, useWindowDimensions, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { availabilityApi, messageApi, packageApi, providerApi, reviewApi } from '../../src/api/services';
+import { availabilityApi, packageApi, providerApi, reviewApi } from '../../src/api/services';
 import { Calendar, type DateRange } from '../../src/components/Calendar';
 import {
   Avatar, Badge, Button, Card, Divider, EmptyState, ErrorState, FooterBar, IconButton,
   Loading, Rating, Row, Screen, Sheet, Stepper, Text, useToast,
 } from '../../src/components/ui';
-import { PLACEHOLDER_IMAGE, serviceFeeFor, SERVICE_FEE_LABEL } from '../../src/constants';
+import { PLACEHOLDER_IMAGE, serviceFeeFor, SERVICE_FEE_LABEL, WEBSITE_URL } from '../../src/constants';
+import { useMessageHost } from '../../src/hooks/useMessageHost';
 import { useAuth } from '../../src/store/auth';
 import { useWishlist } from '../../src/store/wishlist';
 import { colors, palette, radius, spacing } from '../../src/theme';
@@ -136,24 +137,22 @@ export default function PackageDetailScreen() {
     }
   }, [id, pkg.data?.providerId, router, toast, toggleSaved, user]);
 
-  const onMessageHost = useCallback(async () => {
-    if (!user) {
-      router.push(`/sign-in?redirect=/package/${id}`);
-      return;
-    }
-    const providerId = pkg.data?.providerId;
-    const hostId = host?.providerOwnerId ?? pkg.data?.providerOwnerId;
-    if (!providerId || !hostId) {
-      toast.error('This host cannot be messaged just yet.');
-      return;
-    }
+  const onShare = useCallback(async () => {
+    const url = `${WEBSITE_URL}/package/${id}`;
     try {
-      const conversation = await messageApi.openWithProvider(user.id, hostId, providerId);
-      router.push(`/chat/${conversation.id}`);
+      // `url` is only honoured on iOS — Android's share sheet reads `message`
+      // alone, so the link has to live in the text either way.
+      await Share.share({ message: `${pkg.data?.name ?? 'A listing on Mehman'} — ${url}`, url });
     } catch {
-      toast.error('We could not open that conversation.');
+      /* the share sheet was dismissed — nothing to recover from */
     }
-  }, [host, id, pkg.data?.providerId, router, toast, user]);
+  }, [id, pkg.data?.name]);
+
+  const messageHost = useMessageHost(`/package/${id}`);
+  const onMessageHost = useCallback(
+    () => messageHost(host?.providerOwnerId ?? pkg.data?.providerOwnerId, pkg.data?.providerId),
+    [host, messageHost, pkg.data?.providerId, pkg.data?.providerOwnerId],
+  );
 
   const onContinue = useCallback(() => {
     if (!user) {
@@ -240,13 +239,21 @@ export default function PackageDetailScreen() {
               background="rgba(255,255,255,0.94)"
               onPress={() => (router.canGoBack() ? router.back() : router.replace('/(guest)'))}
             />
-            <IconButton
-              icon={saved ? 'heart' : 'heart-outline'}
-              accessibilityLabel={saved ? 'Remove from saved' : 'Save this listing'}
-              color={saved ? colors.primary : colors.text}
-              background="rgba(255,255,255,0.94)"
-              onPress={onHeart}
-            />
+            <View style={styles.heroRightActions}>
+              <IconButton
+                icon="share-outline"
+                accessibilityLabel="Share this listing"
+                background="rgba(255,255,255,0.94)"
+                onPress={() => void onShare()}
+              />
+              <IconButton
+                icon={saved ? 'heart' : 'heart-outline'}
+                accessibilityLabel={saved ? 'Remove from saved' : 'Save this listing'}
+                color={saved ? colors.primary : colors.text}
+                background="rgba(255,255,255,0.94)"
+                onPress={onHeart}
+              />
+            </View>
           </View>
 
           {images.length > 1 ? (
@@ -692,6 +699,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
   },
+  heroRightActions: { flexDirection: 'row', gap: spacing.sm },
   dots: {
     position: 'absolute',
     bottom: spacing.lg,

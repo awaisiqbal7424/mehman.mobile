@@ -3,9 +3,9 @@ import { useQuery } from '@tanstack/react-query';
 import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
 import React, { useCallback } from 'react';
-import { Pressable, StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native';
+import { Pressable, Share, StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native';
 import { availabilityApi } from '../api/services';
-import { PLACEHOLDER_IMAGE } from '../constants';
+import { PLACEHOLDER_IMAGE, WEBSITE_URL } from '../constants';
 import { useAuth } from '../store/auth';
 import { useWishlist } from '../store/wishlist';
 import { colors, radius, shadow, spacing } from '../theme';
@@ -73,6 +73,17 @@ export function PackageCard({ item, layout = 'full', style }: PackageCardProps) 
     }
   }, [item.id, item.providerId, router, toast, toggle, user]);
 
+  const onShare = useCallback(async () => {
+    const url = `${WEBSITE_URL}/package/${item.id}`;
+    try {
+      // `url` is only honoured on iOS — Android's share sheet reads `message`
+      // alone, so the link has to live in the text either way.
+      await Share.share({ message: `${item.name ?? 'A listing on Mehman'} — ${url}`, url });
+    } catch {
+      /* the share sheet was dismissed — nothing to recover from */
+    }
+  }, [item.id, item.name]);
+
   return (
     <View style={[styles.card, layout === 'rail' ? styles.rail : styles.full, style]}>
       <Pressable
@@ -125,9 +136,18 @@ export function PackageCard({ item, layout = 'full', style }: PackageCardProps) 
           {tour && totalSpots ? (
             <View style={styles.spots}>
               <Ionicons name="people-outline" size={12} color={colors.textMuted} />
-              <Text variant="caption" tone={soldOut ? 'danger' : 'muted'} style={styles.spotsText}>
-                {soldOut ? 'Sold out' : `${bookedSpots}/${totalSpots} booked`}
-              </Text>
+              {soldOut ? (
+                <Text variant="caption" tone="danger">
+                  Sold out
+                </Text>
+              ) : (
+                <Text variant="caption" tone="muted">
+                  <Text variant="caption" tone="primary">
+                    {bookedSpots}
+                  </Text>
+                  {`/${totalSpots} Booked`}
+                </Text>
+              )}
               <View style={styles.spotsTrack}>
                 <View
                   style={[
@@ -177,23 +197,34 @@ export function PackageCard({ item, layout = 'full', style }: PackageCardProps) 
         </View>
       </Pressable>
 
-      {/* Sibling of the card's press target, not a child: a control nested
+      {/* Siblings of the card's press target, not children: a control nested
           inside another control is unreachable to a screen reader, and on web
           it is invalid markup. */}
-      <Pressable
-        accessibilityRole="button"
-        accessibilityLabel={saved ? 'Remove from saved' : 'Save this listing'}
-        accessibilityState={{ selected: saved }}
-        hitSlop={10}
-        onPress={onHeart}
-        style={({ pressed }) => [styles.heart, pressed && { transform: [{ scale: 0.88 }] }]}
-      >
-        <Ionicons
-          name={saved ? 'heart' : 'heart-outline'}
-          size={19}
-          color={saved ? colors.primary : colors.text}
-        />
-      </Pressable>
+      <View style={styles.actions}>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Share this listing"
+          hitSlop={10}
+          onPress={() => void onShare()}
+          style={({ pressed }) => [styles.actionButton, pressed && { transform: [{ scale: 0.88 }] }]}
+        >
+          <Ionicons name="share-outline" size={17} color={colors.text} />
+        </Pressable>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={saved ? 'Remove from saved' : 'Save this listing'}
+          accessibilityState={{ selected: saved }}
+          hitSlop={10}
+          onPress={onHeart}
+          style={({ pressed }) => [styles.actionButton, pressed && { transform: [{ scale: 0.88 }] }]}
+        >
+          <Ionicons
+            name={saved ? 'heart' : 'heart-outline'}
+            size={19}
+            color={saved ? colors.primary : colors.text}
+          />
+        </Pressable>
+      </View>
     </View>
   );
 }
@@ -214,10 +245,14 @@ const styles = StyleSheet.create({
   imageWrap: { position: 'relative' },
   image: { width: '100%', aspectRatio: 16 / 10, backgroundColor: colors.surfaceMuted },
 
-  heart: {
+  actions: {
     position: 'absolute',
     top: spacing.md,
     right: spacing.md,
+    flexDirection: 'row',
+    gap: spacing.sm,
+  },
+  actionButton: {
     width: 34,
     height: 34,
     borderRadius: 17,
@@ -233,15 +268,25 @@ const styles = StyleSheet.create({
   metaRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, flexWrap: 'wrap' },
   meta: { flexDirection: 'row', alignItems: 'center', gap: 3, flexShrink: 1 },
 
-  // The "Sold out"/"booked" capacity readout — kept close to the website's
-  // fraction-and-bar chip so a tour reads the same on both clients.
-  spots: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs, marginTop: 2 },
-  spotsText: { flexShrink: 0 },
-  spotsTrack: {
-    flex: 1,
-    height: 4,
-    borderRadius: radius.full,
+  // The "Sold out"/"booked" capacity readout — a self-contained chip that
+  // hugs its own content, matching the fraction-and-bar pill on the website
+  // rather than stretching a bare row across the card.
+  spots: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    alignSelf: 'flex-start',
+    gap: spacing.xs,
+    marginTop: 2,
     backgroundColor: colors.surfaceMuted,
+    borderRadius: radius.md,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: 5,
+  },
+  spotsTrack: {
+    width: 44,
+    height: 5,
+    borderRadius: radius.full,
+    backgroundColor: colors.border,
     overflow: 'hidden',
   },
   spotsFill: { height: '100%', borderRadius: radius.full, backgroundColor: colors.primary },

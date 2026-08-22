@@ -5,14 +5,14 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useCallback } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { messageApi, packageApi, providerApi, reviewApi } from '../../src/api/services';
+import { packageApi, providerApi, reviewApi } from '../../src/api/services';
 import { PackageCard } from '../../src/components/PackageCard';
 import {
   Avatar, Badge, Button, Card, CardSkeleton, Divider, ErrorState, IconButton, Loading,
-  Rating, Row, Screen, Text, useToast,
+  Rating, Row, Screen, Text,
 } from '../../src/components/ui';
 import { PLACEHOLDER_IMAGE } from '../../src/constants';
-import { useAuth } from '../../src/store/auth';
+import { useMessageHost } from '../../src/hooks/useMessageHost';
 import { colors, radius, spacing } from '../../src/theme';
 import { formatShortDate } from '../../src/utils/format';
 import { parseJsonArray } from '../../src/utils/packages';
@@ -28,8 +28,6 @@ export default function ProviderDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const toast = useToast();
-  const user = useAuth((s) => s.user);
 
   const provider = useQuery({
     queryKey: ['provider', id],
@@ -49,28 +47,14 @@ export default function ProviderDetailScreen() {
     enabled: Boolean(id),
   });
 
-  /**
-   * Chat is the only contact route offered here — direct phone/email are not
-   * shown before a booking exists, so nobody has a reason to arrange a trip
-   * outside the platform.
-   */
-  const onMessageHost = useCallback(async () => {
-    if (!user) {
-      router.push(`/sign-in?redirect=/provider/${id}`);
-      return;
-    }
-    const hostId = provider.data?.providerOwnerId;
-    if (!id || !hostId) {
-      toast.error('This host cannot be messaged just yet.');
-      return;
-    }
-    try {
-      const conversation = await messageApi.openWithProvider(user.id, hostId, id);
-      router.push(`/chat/${conversation.id}`);
-    } catch {
-      toast.error('We could not open that conversation.');
-    }
-  }, [id, provider.data?.providerOwnerId, router, toast, user]);
+  // Chat is the only contact route offered here — direct phone/email are not
+  // shown before a booking exists, so nobody has a reason to arrange a trip
+  // outside the platform.
+  const messageHost = useMessageHost(`/provider/${id}`);
+  const onMessageHost = useCallback(
+    () => messageHost(provider.data?.providerOwnerId, id),
+    [id, messageHost, provider.data?.providerOwnerId],
+  );
 
   if (provider.isLoading) return <Loading label="Loading this host…" />;
   if (provider.isError || !provider.data) {
