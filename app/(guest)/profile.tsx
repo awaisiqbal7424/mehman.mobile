@@ -235,27 +235,19 @@ export default function ProfileScreen() {
         {providerStatus === 'approved' ? (
           // A plain Card here reads as just another settings row — easy to
           // miss among everything else on the screen. This is the one control
-          // that switches the whole app to the host side, so it gets the same
-          // bold, unmissable treatment as "Become a Mezban" and the host
-          // side's own "Switch to travelling" banner.
+          // that switches the whole app to the host side, so it gets a bold,
+          // unmissable pill rather than blending in.
           <Pressable
             accessibilityRole="button"
-            accessibilityLabel="Switch to hosting"
+            accessibilityLabel="Switch to Mezban"
             onPress={() => void onSwitchToHost()}
-            style={({ pressed }) => [styles.becomeHost, pressed && { opacity: 0.94 }]}
+            style={({ pressed }) => [styles.switchPill, pressed && { opacity: 0.94 }]}
           >
-            <View style={styles.switchIcon}>
-              <Ionicons name="business" size={22} color={colors.textInverse} />
-            </View>
-            <View style={styles.flex}>
-              <Text variant="bodyStrong" tone="inverse">
-                Switch to hosting
-              </Text>
-              <Text variant="small" tone="inverse" style={styles.becomeHostCopy} numberOfLines={1}>
-                {provider?.name ?? 'Your business'}
-              </Text>
-            </View>
-            <Ionicons name="swap-horizontal" size={22} color={colors.textInverse} />
+            <Ionicons name="business" size={20} color={colors.textInverse} />
+            <Text variant="bodyStrong" tone="inverse" style={styles.flex}>
+              Switch to Mezban
+            </Text>
+            <Ionicons name="swap-horizontal" size={20} color={colors.textInverse} />
           </Pressable>
         ) : providerStatus === 'pending' ? (
           <Card>
@@ -560,13 +552,14 @@ const styles = StyleSheet.create({
     backgroundColor: colors.primary,
   },
   becomeHostCopy: { opacity: 0.9, marginTop: 2 },
-  switchIcon: {
-    width: 42,
-    height: 42,
-    borderRadius: radius.md,
-    backgroundColor: 'rgba(255,255,255,0.2)',
+  switchPill: {
+    flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
+    gap: spacing.md,
+    paddingVertical: spacing.md,
+    paddingHorizontal: spacing.xl,
+    borderRadius: radius.full,
+    backgroundColor: colors.primary,
   },
 
   menuRow: {
