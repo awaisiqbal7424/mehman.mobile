@@ -68,7 +68,7 @@ export default function SignInScreen() {
 
       <View style={styles.brand}>
         <Image
-          source={require('../../assets/brand/mehman-orange.png')}
+          source={require('../../assets/brand/mehman-wordmark-orange.png')}
           style={styles.logo}
           contentFit="contain"
           accessibilityLabel="Mehman"

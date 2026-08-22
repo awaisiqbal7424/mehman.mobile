@@ -1,4 +1,4 @@
-import { Ionicons } from '@expo/vector-icons';
+import { Ionicons } from './LucideIcon';
 import * as Haptics from 'expo-haptics';
 import React, { createContext, useCallback, useContext, useMemo, useRef, useState } from 'react';
 import { Platform, Pressable, StyleSheet, View } from 'react-native';

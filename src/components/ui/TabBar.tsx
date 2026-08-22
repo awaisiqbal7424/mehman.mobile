@@ -1,9 +1,6 @@
-import { Ionicons } from '@expo/vector-icons';
-import { BlurView } from 'expo-blur';
 import * as Haptics from 'expo-haptics';
 import React, { createContext, useContext } from 'react';
 import { Platform, Pressable, StyleSheet, View } from 'react-native';
-import Animated, { useAnimatedStyle, useSharedValue, withSpring } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors, radius, shadow, spacing, TAB_BAR } from '../../theme';
 import { Text } from './Text';
@@ -30,7 +27,7 @@ interface TabOptions {
   tabBarLabel?: unknown;
   tabBarBadge?: string | number;
   tabBarButton?: unknown;
-  tabBarItemStyle?: { display?: string };
+  tabBarItemStyle?: unknown;
   tabBarIcon?: (props: { focused: boolean; color: string; size: number }) => React.ReactNode;
 }
 
@@ -44,10 +41,12 @@ interface TabOptions {
  * because the failure mode is a tab appearing that was asked to be hidden.
  */
 function isHidden(options: TabOptions): boolean {
+  const itemStyle = options.tabBarItemStyle as { display?: string } | null | undefined;
+
   return (
     options.href === null ||
     options.tabBarButton === null ||
-    options.tabBarItemStyle?.display === 'none'
+    itemStyle?.display === 'none'
   );
 }
 
@@ -78,7 +77,7 @@ export function FloatingTabBar({ state, descriptors, navigation }: TabBarProps) 
       style={[styles.host, { paddingBottom: Math.max(insets.bottom, TAB_BAR.INSET) }]}
       pointerEvents="box-none"
     >
-      <BlurView intensity={Platform.OS === 'android' ? 0 : 40} tint="light" style={styles.pill}>
+      <View style={styles.pill}>
         {state.routes.map((route, index) => {
           const options = descriptors[route.key]?.options ?? {};
           if (isHidden(options)) return null;
@@ -107,7 +106,7 @@ export function FloatingTabBar({ state, descriptors, navigation }: TabBarProps) 
             />
           );
         })}
-      </BlurView>
+      </View>
     </View>
   );
 }
@@ -121,16 +120,6 @@ function TabItem({
   icon?: (props: { focused: boolean; color: string; size: number }) => React.ReactNode;
   onPress: () => void;
 }) {
-  const scale = useSharedValue(focused ? 1 : 0);
-  scale.value = withSpring(focused ? 1 : 0, { damping: 16, stiffness: 220 });
-
-  // The selected tab sits on a soft orange lozenge that springs in behind it —
-  // enough to answer "where am I?" at a glance without a second colour.
-  const lozenge = useAnimatedStyle(() => ({
-    opacity: scale.value,
-    transform: [{ scale: 0.7 + scale.value * 0.3 }],
-  }));
-
   const tint = focused ? colors.primary : colors.textMuted;
 
   return (
@@ -142,8 +131,7 @@ function TabItem({
       style={styles.item}
     >
       <View style={styles.iconWrap}>
-        <Animated.View style={[styles.lozenge, lozenge]} />
-        {icon?.({ focused, color: tint, size: 23 })}
+        {icon?.({ focused, color: tint, size: 22 })}
         {badge !== undefined && badge !== null ? (
           <View style={styles.badge}>
             <Text variant="caption" style={styles.badgeText}>
@@ -167,16 +155,15 @@ const styles = StyleSheet.create({
     bottom: 0,
   },
   pill: {
+    position: 'relative',
     flexDirection: 'row',
     alignItems: 'center',
     height: TAB_BAR.HEIGHT,
     borderRadius: radius.full,
     overflow: 'hidden',
-    // The blur is iOS-only; everywhere else this near-opaque fill stands in for
-    // it, which keeps the bar legible over a photograph either way.
-    backgroundColor: Platform.OS === 'ios' ? 'rgba(255,255,255,0.72)' : 'rgba(255,255,255,0.97)',
+    backgroundColor: colors.surface,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: 'rgba(255,255,255,0.6)',
+    borderColor: colors.border,
     paddingHorizontal: spacing.xs,
     ...shadow.lg,
   },
@@ -184,19 +171,12 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 1,
-    paddingTop: spacing.sm,
-    paddingBottom: spacing.sm,
+    gap: 3,
+    minHeight: 56,
+    paddingVertical: spacing.sm,
   },
-  iconWrap: { alignItems: 'center', justifyContent: 'center', width: 46, height: 26 },
-  lozenge: {
-    position: 'absolute',
-    width: 46,
-    height: 26,
-    borderRadius: radius.full,
-    backgroundColor: colors.primarySoft,
-  },
-  label: { fontSize: 11, letterSpacing: 0, textTransform: 'none' },
+  iconWrap: { alignItems: 'center', justifyContent: 'center', width: 46, height: 24, position: 'relative' },
+  label: { fontSize: 12, lineHeight: 16, letterSpacing: 0, textTransform: 'none' },
   badge: {
     position: 'absolute',
     top: -4,

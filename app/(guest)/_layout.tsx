@@ -1,9 +1,10 @@
-import { Ionicons } from '@expo/vector-icons';
+import { ChatCircle, Compass, MagnifyingGlass, User } from 'phosphor-react-native';
 import { useQuery } from '@tanstack/react-query';
 import { Tabs } from 'expo-router';
 import React from 'react';
 import { messageApi } from '../../src/api/services';
 import { FloatingTabBar, TabBarSpaceContext } from '../../src/components/ui';
+import { TipiIcon } from '../../src/components/ui/LucideIcon';
 import { useAuth } from '../../src/store/auth';
 import { colors, TAB_BAR } from '../../src/theme';
 
@@ -43,7 +44,7 @@ export default function GuestTabsLayout() {
           options={{
             title: 'Explore',
             tabBarIcon: ({ color, focused }) => (
-              <Ionicons name={focused ? 'compass' : 'compass-outline'} size={23} color={color} />
+              <Compass size={23} color={String(color)} weight={focused ? 'bold' : 'regular'} />
             ),
           }}
         />
@@ -52,7 +53,7 @@ export default function GuestTabsLayout() {
           options={{
             title: 'Search',
             tabBarIcon: ({ color, focused }) => (
-              <Ionicons name={focused ? 'search' : 'search-outline'} size={23} color={color} />
+              <MagnifyingGlass size={23} color={String(color)} weight={focused ? 'bold' : 'regular'} />
             ),
           }}
         />
@@ -61,7 +62,7 @@ export default function GuestTabsLayout() {
           options={{
             title: 'Trips',
             tabBarIcon: ({ color, focused }) => (
-              <Ionicons name={focused ? 'briefcase' : 'briefcase-outline'} size={22} color={color} />
+              <TipiIcon size={22} color={String(color)} />
             ),
           }}
         />
@@ -71,7 +72,7 @@ export default function GuestTabsLayout() {
             title: 'Inbox',
             tabBarBadge: unreadTotal > 0 ? (unreadTotal > 9 ? '9+' : unreadTotal) : undefined,
             tabBarIcon: ({ color, focused }) => (
-              <Ionicons name={focused ? 'chatbubble' : 'chatbubble-outline'} size={21} color={color} />
+              <ChatCircle size={21} color={String(color)} weight={focused ? 'bold' : 'regular'} />
             ),
           }}
         />
@@ -80,7 +81,7 @@ export default function GuestTabsLayout() {
           options={{
             title: 'Profile',
             tabBarIcon: ({ color, focused }) => (
-              <Ionicons name={focused ? 'person' : 'person-outline'} size={22} color={color} />
+              <User size={22} color={String(color)} weight={focused ? 'bold' : 'regular'} />
             ),
           }}
         />

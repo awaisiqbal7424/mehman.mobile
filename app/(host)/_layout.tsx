@@ -1,4 +1,4 @@
-import { Ionicons } from '@expo/vector-icons';
+import { Calendar, CalendarBlank, DotsThree, House, SquaresFour } from 'phosphor-react-native';
 import { Redirect, Tabs } from 'expo-router';
 import React from 'react';
 import { FloatingTabBar, TabBarSpaceContext } from '../../src/components/ui';
@@ -33,7 +33,7 @@ export default function HostTabsLayout() {
           options={{
             title: 'Today',
             tabBarIcon: ({ color, focused }) => (
-              <Ionicons name={focused ? 'home' : 'home-outline'} size={22} color={color} />
+              <House size={22} color={String(color)} weight={focused ? 'bold' : 'regular'} />
             ),
           }}
         />
@@ -42,7 +42,7 @@ export default function HostTabsLayout() {
           options={{
             title: 'Bookings',
             tabBarIcon: ({ color, focused }) => (
-              <Ionicons name={focused ? 'calendar-clear' : 'calendar-clear-outline'} size={21} color={color} />
+              <CalendarBlank size={21} color={String(color)} weight={focused ? 'bold' : 'regular'} />
             ),
           }}
         />
@@ -51,7 +51,7 @@ export default function HostTabsLayout() {
           options={{
             title: 'Calendar',
             tabBarIcon: ({ color, focused }) => (
-              <Ionicons name={focused ? 'calendar' : 'calendar-outline'} size={21} color={color} />
+              <Calendar size={21} color={String(color)} weight={focused ? 'bold' : 'regular'} />
             ),
           }}
         />
@@ -60,7 +60,7 @@ export default function HostTabsLayout() {
           options={{
             title: 'Listings',
             tabBarIcon: ({ color, focused }) => (
-              <Ionicons name={focused ? 'albums' : 'albums-outline'} size={21} color={color} />
+              <SquaresFour size={21} color={String(color)} weight={focused ? 'bold' : 'regular'} />
             ),
           }}
         />
@@ -69,11 +69,7 @@ export default function HostTabsLayout() {
           options={{
             title: 'More',
             tabBarIcon: ({ color, focused }) => (
-              <Ionicons
-                name={focused ? 'ellipsis-horizontal-circle' : 'ellipsis-horizontal-circle-outline'}
-                size={22}
-                color={color}
-              />
+              <DotsThree size={22} color={String(color)} weight={focused ? 'bold' : 'regular'} />
             ),
           }}
         />

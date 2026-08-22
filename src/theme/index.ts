@@ -50,6 +50,12 @@ export const palette = {
 export const colors = {
   /** Page background. Warm rather than pure white — it flatters the photography. */
   background: palette.orange50,
+  backgroundGradient: [
+    'rgba(234,88,12,0.28)',
+    'rgba(255,237,213,0.72)',
+    'rgba(255,255,255,0.96)',
+    'rgba(28,25,23,0.06)',
+  ],
   /** Cards, sheets, bars. */
   surface: palette.white,
   surfaceMuted: palette.ink100,

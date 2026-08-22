@@ -1,0 +1,124 @@
+import {
+  ArrowLeft, ArrowRight, ArrowUUpLeft, Bell, Briefcase, Calendar, CalendarBlank,
+  Check, CheckCircle, ChatCircle, CloudSlash, Compass, Copy, DotsThree,
+  Eye, EyeSlash, Heart, House, Info, Image, Images, Lightbulb, List, MapPin,
+  MapTrifold, Megaphone, MagnifyingGlass, PaperPlaneTilt, Plus, Receipt,
+  Scales, SealCheck, Sparkle, Star, Tag, Timer, Trash, User, Users,
+  WarningCircle, X, XCircle, IconProps,
+} from 'phosphor-react-native';
+import React from 'react';
+import { Pressable } from 'react-native';
+import Svg, { Path } from 'react-native-svg';
+
+const ICONS = {
+  add: Plus,
+  'alert-circle': WarningCircle,
+  'alert-circle-outline': WarningCircle,
+  'information-circle': Info,
+  'information-circle-outline': Info,
+  'arrow-forward': ArrowRight,
+  'arrow-forward-circle': ArrowRight,
+  'arrow-undo': ArrowUUpLeft,
+  'arrow-undo-outline': ArrowUUpLeft,
+  calendar: Calendar,
+  'calendar-outline': Calendar,
+  'calendar-clear': CalendarBlank,
+  'calendar-clear-outline': CalendarBlank,
+  checkmark: Check,
+  'checkmark-circle': CheckCircle,
+  'checkmark-circle-outline': CheckCircle,
+  'chevron-back': ArrowLeft,
+  'chevron-down': ArrowLeft,
+  'chevron-forward': ArrowRight,
+  chatbubble: ChatCircle,
+  'chatbubble-ellipses': ChatCircle,
+  'chatbubble-ellipses-outline': ChatCircle,
+  'chatbubble-outline': ChatCircle,
+  'chatbox-ellipses-outline': ChatCircle,
+  close: X,
+  'close-circle': XCircle,
+  'close-circle-outline': XCircle,
+  'cloud-offline-outline': CloudSlash,
+  compass: Compass,
+  'compass-outline': Compass,
+  'copy-outline': Copy,
+  'ellipsis-horizontal-circle': DotsThree,
+  'ellipsis-horizontal-circle-outline': DotsThree,
+  'ellipsis-vertical': DotsThree,
+  'eye-off-outline': EyeSlash,
+  'eye-outline': Eye,
+  flash: Lightbulb,
+  'heart-outline': Heart,
+  heart: Heart,
+  home: House,
+  'home-outline': House,
+  'library-outline': List,
+  'location-outline': MapPin,
+  'navigate-outline': MapPin,
+  menu: List,
+  'moon-outline': Sparkle,
+  'notifications-outline': Bell,
+  'people-outline': Users,
+  'briefcase-outline': Briefcase,
+  person: User,
+  'person-outline': User,
+  send: PaperPlaneTilt,
+  'paper-plane-outline': PaperPlaneTilt,
+  'shield-checkmark-outline': SealCheck,
+  search: MagnifyingGlass,
+  star: Star,
+  'star-outline': Star,
+  'time-outline': Timer,
+  'trash-outline': Trash,
+  'trail-sign-outline': MapTrifold,
+  'sparkles-outline': Sparkle,
+  'flag-outline': MapPin,
+  'images-outline': Images,
+  'camera-outline': Image,
+  'receipt-outline': Receipt,
+  'cash-outline': Scales,
+  'pricetag-outline': Tag,
+  'call-outline': ChatCircle,
+  'mail-outline': Megaphone,
+  'logo-whatsapp': ChatCircle,
+  'swap-horizontal': ArrowRight,
+  business: Briefcase,
+  'business-outline': Briefcase,
+  'bed-outline': House,
+  'hourglass-outline': Timer,
+  'ribbon-outline': SealCheck,
+} as const;
+
+export type IconName = keyof typeof ICONS;
+
+export function Ionicons({
+  name, size = 24, color, style, onPress, accessibilityRole, accessibilityLabel,
+}: IconProps & {
+  name: string;
+  accessibilityRole?: string;
+  accessibilityLabel?: string;
+  onPress?: () => void;
+}) {
+  const Icon = ICONS[name as IconName] ?? WarningCircle;
+  const icon = <Icon size={size} color={color} style={style} weight="regular" />;
+  return onPress ? (
+    <Pressable accessibilityRole={accessibilityRole as 'button'} accessibilityLabel={accessibilityLabel} onPress={onPress}>
+      {icon}
+    </Pressable>
+  ) : icon;
+}
+
+export namespace Ionicons {
+  export const glyphMap: Record<string, true> = ICONS as unknown as Record<string, true>;
+}
+
+export function TipiIcon({ size = 24, color }: { size?: number; color?: string }) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 256 256" fill="none">
+      <Path
+        d="M238.74 211.69 137.5 53.5l21.24-33.19a8 8 0 0 0-13.48-8.62L128 38.66l-17.26-26.97a8 8 0 1 0-13.48 8.62L118.5 53.5 17.26 211.69A8 8 0 0 0 24 224h208a8 8 0 0 0 6.74-12.31ZM86.3 208l41.7-65.16L169.7 208Zm102.4 0-54-84.31a8 8 0 0 0-13.48 0L67.3 208H38.62L128 68.34 217.38 208Z"
+        fill={color}
+      />
+    </Svg>
+  );
+}

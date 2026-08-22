@@ -1,4 +1,4 @@
-import { Ionicons } from '@expo/vector-icons';
+import { Ionicons } from './LucideIcon';
 import * as Haptics from 'expo-haptics';
 import React, { useCallback } from 'react';
 import {
@@ -16,7 +16,7 @@ export interface ButtonProps {
   onPress?: (event: GestureResponderEvent) => void;
   variant?: Variant;
   size?: Size;
-  /** Ionicons name, drawn before the label. */
+  /** Icon name, drawn before the label. */
   icon?: keyof typeof Ionicons.glyphMap;
   iconAfter?: keyof typeof Ionicons.glyphMap;
   loading?: boolean;

@@ -1,4 +1,5 @@
-import { Ionicons } from '@expo/vector-icons';
+import { Ionicons } from './LucideIcon';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import React from 'react';
 import {
@@ -76,10 +77,17 @@ export function Screen({
       // leaves a gap the height of the bar under the focused field.
       keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 0}
     >
-      {body}
-      {footer ? (
-        <View style={[styles.footer, { paddingBottom: bottomPad }]}>{footer}</View>
-      ) : null}
+      <LinearGradient
+        colors={colors.backgroundGradient}
+        start={{ x: 1, y: 0 }}
+        end={{ x: 0, y: 1 }}
+        style={styles.gradient}
+      >
+        {body}
+        {footer ? (
+          <View style={[styles.footer, { paddingBottom: bottomPad }]}>{footer}</View>
+        ) : null}
+      </LinearGradient>
     </KeyboardAvoidingView>
   );
 }
@@ -206,6 +214,7 @@ export function Notice({
 
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: colors.background },
+  gradient: { flex: 1 },
   flex: { flex: 1 },
   padded: { paddingHorizontal: spacing.lg },
 

@@ -1,14 +1,14 @@
-import { Ionicons } from '@expo/vector-icons';
+import { Ionicons } from '../../src/components/ui/LucideIcon';
 import { useQuery } from '@tanstack/react-query';
 import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
-import React, { useCallback } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { FlatList, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { packageApi, providerApi, tripBuilderApi } from '../../src/api/services';
 import { PackageCard, RAIL_CARD_WIDTH } from '../../src/components/PackageCard';
 import {
-  Badge, CardSkeleton, IconButton, Rating, Screen, Section, Text,
+  CardSkeleton, IconButton, Rating, Screen, Section, Text,
 } from '../../src/components/ui';
 import { PLACEHOLDER_IMAGE } from '../../src/constants';
 import { useAuth } from '../../src/store/auth';
@@ -27,6 +27,16 @@ export default function ExploreScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const user = useAuth((s) => s.user);
+  const [destinationIndex, setDestinationIndex] = useState(0);
+  const destinationNames = ['Hunza', 'Skardu', 'Swat', 'Murree', 'Lahore'];
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setDestinationIndex((index) => (index + 1) % destinationNames.length);
+    }, 1000);
+
+    return () => clearInterval(timer);
+  }, [destinationNames.length]);
 
   const tours = useQuery({
     queryKey: ['packages', 'top-rated-tours'],
@@ -71,17 +81,22 @@ export default function ExploreScreen() {
       {/* ── greeting ──────────────────────────────────────────────────── */}
       <View style={[styles.top, { paddingTop: insets.top + spacing.md }]}>
         <View style={styles.greeting}>
-          <Text variant="small" tone="secondary">
-            {firstName ? `Salaam, ${firstName}` : 'Salaam'}
-          </Text>
-          <Text variant="title">Where to next?</Text>
+          <Text variant="title">{firstName ? `Salaam, ${firstName}` : 'Salaam'}</Text>
         </View>
-        <IconButton
-          icon="heart-outline"
-          accessibilityLabel="Saved listings"
-          background={colors.surface}
-          onPress={() => router.push('/(guest)/saved')}
-        />
+        <View style={styles.topActions}>
+          <IconButton
+            icon="notifications-outline"
+            accessibilityLabel="Notifications"
+            background={colors.surface}
+            onPress={() => router.push('/notifications')}
+          />
+          <IconButton
+            icon="heart-outline"
+            accessibilityLabel="Saved listings"
+            background={colors.surface}
+            onPress={() => router.push('/(guest)/saved')}
+          />
+        </View>
       </View>
 
       {/* ── search entry ──────────────────────────────────────────────── */}
@@ -91,63 +106,42 @@ export default function ExploreScreen() {
         onPress={() => router.push('/(guest)/search')}
         style={({ pressed }) => [styles.searchBar, pressed && { opacity: 0.85 }]}
       >
-        <Ionicons name="search" size={20} color={colors.primary} />
         <View style={styles.flex}>
-          <Text variant="bodyStrong">Search Pakistan</Text>
-          <Text variant="small" tone="muted">
-            Hunza · Skardu · Swat · anywhere
+          <Text variant="body" tone="muted">
+            {`Where to next? ${destinationNames[destinationIndex]}`}
           </Text>
+        </View>
+        <View style={styles.searchIconCircle}>
+          <Ionicons name="search" size={19} color={colors.textInverse} />
         </View>
       </Pressable>
 
-      {/*
-        There used to be a row of Tours / Stays / Custom tiles here. It went for
-        two reasons: the rails below already lead into tours and stays, each with
-        its own "See all", and the Custom tile pointed at exactly the same screen
-        as the trip-builder card further down. Two doors onto one room, plus a
-        row of icons repeating what the headings already said.
-      */}
+      <View style={styles.categoryRow}>
+        <CategoryButton
+          label="Tours"
+          icon={<Image source={require('../../assets/briefcase-3d.png.png')} style={styles.categoryImage} contentFit="contain" />}
+          onPress={() => router.push('/(guest)/search?type=TOUR')}
+        />
+        <CategoryButton
+          label="Stays"
+          icon={<Image source={require('../../assets/umbrella-3d.png')} style={styles.categoryImage} contentFit="contain" />}
+          onPress={() => router.push('/(guest)/search?type=STAY')}
+        />
+        <CategoryButton
+          label="Custom"
+          icon={<Image source={require('../../assets/paintbrush-3d.png')} style={styles.categoryImage} contentFit="contain" />}
+          onPress={() => router.push('/trip-builder')}
+        />
+      </View>
 
       {/* ── rails ─────────────────────────────────────────────────────── */}
       <PackageRail
         title="Popular tours"
-        subtitle="Handpicked packages from verified agencies"
         loading={tours.isLoading}
         items={tours.data?.items}
         onSeeAll={() => router.push('/(guest)/search?type=TOUR')}
         emptyMessage="No tours published yet. Check back soon."
       />
-
-      {/* ── custom trip pitch ─────────────────────────────────────────── */}
-      <Pressable
-        accessibilityRole="button"
-        accessibilityLabel="Build your own trip"
-        onPress={() => router.push('/trip-builder')}
-        style={({ pressed }) => [styles.pitch, pressed && { opacity: 0.94 }]}
-      >
-        <Image
-          source={{ uri: 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=900&q=70' }}
-          style={styles.pitchImage}
-          contentFit="cover"
-          transition={250}
-        />
-        <View style={styles.pitchScrim} />
-        <View style={styles.pitchBody}>
-          <Badge label="Made for you" tone="primary" />
-          <Text variant="title" tone="inverse" style={styles.pitchTitle}>
-            Build your perfect Pakistan trip
-          </Text>
-          <Text variant="small" tone="inverse" style={styles.pitchCopy}>
-            Tell us where and when. Verified operators send you a price.
-          </Text>
-          <View style={styles.pitchCta}>
-            <Text variant="smallStrong" tone="inverse">
-              Start planning
-            </Text>
-            <Ionicons name="arrow-forward" size={15} color={colors.textInverse} />
-          </View>
-        </View>
-      </Pressable>
 
       <DestinationRail
         destinations={destinations.data}
@@ -157,7 +151,6 @@ export default function ExploreScreen() {
 
       <PackageRail
         title="Stay with a Mezban"
-        subtitle="Unique homes, cottages and guesthouses"
         loading={stays.isLoading}
         items={stays.data?.items}
         onSeeAll={() => router.push('/(guest)/search?type=STAY')}
@@ -166,7 +159,6 @@ export default function ExploreScreen() {
 
       <PackageRail
         title="Best value"
-        subtitle="Top-rated trips at the friendliest prices"
         loading={bestValue.isLoading}
         items={bestValue.data?.items}
         onSeeAll={() => router.push('/(guest)/search?sort=price_asc')}
@@ -187,10 +179,9 @@ export default function ExploreScreen() {
 /* ── rails ────────────────────────────────────────────────────────────────── */
 
 function PackageRail({
-  title, subtitle, items, loading, onSeeAll, emptyMessage,
+  title, items, loading, onSeeAll, emptyMessage,
 }: {
   title: string;
-  subtitle?: string;
   items?: ProviderPackage[];
   loading: boolean;
   onSeeAll: () => void;
@@ -198,7 +189,7 @@ function PackageRail({
 }) {
   if (loading) {
     return (
-      <Section title={title} subtitle={subtitle}>
+      <Section title={title}>
         <CardSkeleton count={1} />
       </Section>
     );
@@ -206,7 +197,7 @@ function PackageRail({
 
   if (!items?.length) {
     return (
-      <Section title={title} subtitle={subtitle}>
+      <Section title={title}>
         <View style={styles.railEmpty}>
           <Text variant="small" tone="muted">
             {emptyMessage}
@@ -217,7 +208,7 @@ function PackageRail({
   }
 
   return (
-    <Section title={title} subtitle={subtitle} action="See all" onAction={onSeeAll}>
+    <Section title={title} action="See all" onAction={onSeeAll}>
       <FlatList
         horizontal
         data={items}
@@ -245,7 +236,7 @@ function DestinationRail({
   if (loading || !destinations?.length) return null;
 
   return (
-    <Section title="Popular destinations" subtitle="The valleys people ask for by name">
+    <Section title="Explore Pakistan">
       <ScrollView
         horizontal
         showsHorizontalScrollIndicator={false}
@@ -291,7 +282,7 @@ function OperatorRail({
   if (loading || !operators?.length) return null;
 
   return (
-    <Section title="Verified hosts" subtitle="Every business here is checked before it can list">
+    <Section title="Verified hosts">
       <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.rail}>
         {operators.map((provider) => (
           <Pressable
@@ -323,6 +314,27 @@ function OperatorRail({
   );
 }
 
+function CategoryButton({
+  label, icon, onPress,
+}: {
+  label: string;
+  icon: React.ReactNode;
+  onPress: () => void;
+}) {
+  return (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={label}
+      onPress={onPress}
+      style={({ pressed }) => [styles.category, pressed && { opacity: 0.7 }]}
+    >
+      <View style={styles.categoryIcon}>
+        {icon}
+      </View>
+    </Pressable>
+  );
+}
+
 const styles = StyleSheet.create({
   flex: { flex: 1 },
 
@@ -335,21 +347,44 @@ const styles = StyleSheet.create({
     paddingBottom: spacing.lg,
   },
   greeting: { flex: 1, gap: 2 },
+  topActions: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
 
   searchBar: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: spacing.md,
     marginHorizontal: spacing.lg,
-    marginBottom: spacing.xl,
-    paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.md,
+    marginBottom: spacing.md,
+    height: 56,
+    paddingLeft: spacing.lg,
+    paddingRight: spacing.xs,
     backgroundColor: colors.surface,
-    borderRadius: radius.full,
+    borderRadius: 28,
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: colors.border,
     ...shadow.sm,
   },
+  searchIconCircle: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: colors.primary,
+  },
+  categoryRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    marginHorizontal: spacing.lg,
+    marginBottom: spacing.xl,
+  },
+  category: { alignItems: 'center', minWidth: 76 },
+  categoryIcon: {
+    width: 84,
+    height: 84,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  categoryImage: { width: 80, height: 80 },
 
   rail: { paddingHorizontal: spacing.lg },
   railEmpty: { paddingHorizontal: spacing.lg },
@@ -392,28 +427,6 @@ const styles = StyleSheet.create({
     backgroundColor: colors.surfaceMuted,
     marginBottom: spacing.xs,
   },
-
-  pitch: {
-    height: 210,
-    marginHorizontal: spacing.lg,
-    marginBottom: spacing['2xl'],
-    borderRadius: radius.xl,
-    overflow: 'hidden',
-    ...shadow.md,
-  },
-  pitchImage: { width: '100%', height: '100%' },
-  pitchScrim: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    backgroundColor: 'rgba(28,25,23,0.5)',
-  },
-  pitchBody: { position: 'absolute', left: spacing.xl, right: spacing.xl, bottom: spacing.xl, gap: spacing.xs },
-  pitchTitle: { marginTop: spacing.sm },
-  pitchCopy: { opacity: 0.9 },
-  pitchCta: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs, marginTop: spacing.sm },
 
   tail: { height: spacing.lg },
 });

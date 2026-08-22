@@ -5,7 +5,7 @@
     "scheme": "mehman",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/icon.png",
+    "icon": "./assets/brand/mehman-mark-black-on-orange-rounded.png",
     "userInterfaceStyle": "light",
     "newArchEnabled": true,
     "splash": {
@@ -13,7 +13,9 @@
       "resizeMode": "contain",
       "backgroundColor": "#EA580C"
     },
-    "assetBundlePatterns": ["**/*"],
+    "assetBundlePatterns": [
+      "**/*"
+    ],
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "co.mehman.app",
@@ -28,22 +30,50 @@
       "edgeToEdgeEnabled": true,
       "adaptiveIcon": {
         "backgroundColor": "#EA580C",
-        "foregroundImage": "./assets/android-icon-foreground.png",
-        "monochromeImage": "./assets/android-icon-monochrome.png"
+        "foregroundImage": "./assets/brand/mehman-mark-black-transparent.png",
+        "monochromeImage": "./assets/brand/mehman-mark-black-transparent.png"
       },
-      "predictiveBackGestureEnabled": false
+      "predictiveBackGestureEnabled": false,
+      "permissions": [
+        "android.permission.RECORD_AUDIO"
+      ]
     },
-    "web": { "favicon": "./assets/favicon.png", "bundler": "metro" },
+    "web": {
+      "favicon": "./assets/brand/mehman-mark-black-on-orange-rounded.png",
+      "bundler": "metro"
+    },
     "plugins": [
       "expo-router",
       "expo-secure-store",
       "expo-font",
       "expo-web-browser",
-      ["expo-splash-screen", { "backgroundColor": "#EA580C", "image": "./assets/splash-icon.png", "imageWidth": 180 }],
-      ["expo-image-picker", { "photosPermission": "Mehman uses your photos to attach payment receipts and listing images." }]
+      [
+        "expo-splash-screen",
+        {
+          "backgroundColor": "#EA580C",
+          "image": "./assets/splash-icon.png",
+          "imageWidth": 180
+        }
+      ],
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Mehman uses your photos to attach payment receipts and listing images."
+        }
+      ]
     ],
     "extra": {
-      "apiUrl": "https://backend.mehman.co"
+      "apiUrl": "https://backend.mehman.co",
+      "router": {},
+      "eas": {
+        "projectId": "7d135322-5272-46d2-adac-becfdc780136"
+      }
+    },
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
+    "updates": {
+      "url": "https://u.expo.dev/7d135322-5272-46d2-adac-becfdc780136"
     }
   }
 }

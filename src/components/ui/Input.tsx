@@ -1,4 +1,4 @@
-import { Ionicons } from '@expo/vector-icons';
+import { Ionicons } from './LucideIcon';
 import React, { forwardRef, useState } from 'react';
 import {
   Pressable, StyleSheet, TextInput, View,
