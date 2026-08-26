@@ -116,6 +116,38 @@ travelling**. Nobody has to sign out to change hats.
 - **Loading shows the shape of what is coming**, not a centred spinner. On a
   mountain road that is the difference between "slow" and "broken".
 
+### TravelBuddy
+
+`app/assistant.tsx` — a full screen, not a floating widget: on a phone a panel that
+overlaps the tab bar is in the way, and the keyboard wants the whole height. Bubbles,
+composer and inverted list all come from `app/chat/[id].tsx`, so it reads as another
+conversation rather than a different product. Its face is the brand **M** mark from
+`assets/brand/` — as the avatar beside its own turns, and on the opening screen.
+
+It runs in two modes off one route:
+
+- `/assistant` — TravelBuddy proper. Helps people work out where and when to go in
+  Pakistan, answers questions about booking and hosting, and hands payments, account
+  security, legal matters, complaints and anything unsafe to a person on WhatsApp. Works
+  in **English or Urdu**, following whichever the person writes in. Reached from the
+  profile shortcuts and the Chats header.
+
+  It may draw on general travel knowledge rather than only Mehman's own facts, and is
+  required to hedge it — check roads, permits and weather before travelling. Mehman's own
+  data stays strictly grounded. The reasoning is in `AI_ASSISTANT.md`.
+- `/assistant?mode=listing` — drafts listing copy from facts the host gives it. Reached
+  from the ✨ button in the listing editor's header, because writing the description is
+  the part hosts stall on and the help should be where they stall.
+
+**There is no API key in this app, and nothing to configure.** It calls `/api/ai/chat` on
+the same API origin as everything else; the key lives only in the API server's environment.
+A shipped binary is readable, so a key embedded here would be a key given away.
+`src/api/ai.ts` is the whole client. The screen hides itself behind an "unavailable"
+state — with the WhatsApp handover still offered — when `/api/ai/status` says the server
+has no key.
+
+Set up, costs and deployment are in **`AI_ASSISTANT.md`** in the `Mehman.Backend` repo.
+
 ### What is not wired up
 
 - **Listing photos picked on the phone stay on the phone.** There is no image

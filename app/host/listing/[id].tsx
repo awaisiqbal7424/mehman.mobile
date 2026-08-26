@@ -8,7 +8,7 @@ import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { errorMessage } from '../../../src/api/client';
 import { packageApi, pricingOptionApi } from '../../../src/api/services';
 import {
-  Button, Card, ConfirmSheet, Divider, ErrorState, FooterBar, Header, Input, Loading, Notice,
+  Button, Card, ConfirmSheet, Divider, ErrorState, FooterBar, Header, IconButton, Input, Loading, Notice,
   Screen, Sheet, Stepper, Text, TextArea, useToast,
 } from '../../../src/components/ui';
 import { useAuth } from '../../../src/store/auth';
@@ -299,7 +299,22 @@ export default function ListingEditorScreen() {
         </FooterBar>
       }
     >
-      <Header title={isNew ? 'New listing' : 'Edit listing'} onBack={() => router.back()} />
+      <Header
+        title={isNew ? 'New listing' : 'Edit listing'}
+        onBack={() => router.back()}
+        // Writing the description is the part hosts stall on, so the help sits
+        // on the screen where they stall rather than somewhere in a menu.
+        // TravelBuddy drafts copy from facts the host gives it — in this mode it
+        // is explicitly barred from adding anything the host did not say — and
+        // they still have to paste in what they want.
+        right={
+          <IconButton
+            icon="sparkles-outline"
+            accessibilityLabel="Ask TravelBuddy to help write this listing"
+            onPress={() => router.push('/assistant?mode=listing')}
+          />
+        }
+      />
 
       <View style={styles.body}>
         {/* ── type ────────────────────────────────────────────────────── */}

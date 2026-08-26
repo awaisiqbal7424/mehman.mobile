@@ -105,11 +105,20 @@ export default function InboxScreen() {
         title="Chats"
         subtitle="Your conversations with hosts"
         right={
-          <IconButton
-            icon={searchOpen ? 'close' : 'search'}
-            accessibilityLabel={searchOpen ? 'Close search' : 'Search conversations'}
-            onPress={toggleSearch}
-          />
+          // Two actions rather than one: the assistant belongs where a person
+          // already came looking for an answer, and an inbox is exactly that.
+          <View style={styles.headingActions}>
+            <IconButton
+              icon="sparkles-outline"
+              accessibilityLabel="Ask TravelBuddy"
+              onPress={() => router.push('/assistant')}
+            />
+            <IconButton
+              icon={searchOpen ? 'close' : 'search'}
+              accessibilityLabel={searchOpen ? 'Close search' : 'Search conversations'}
+              onPress={toggleSearch}
+            />
+          </View>
         }
       />
 
@@ -240,6 +249,7 @@ function ConversationRow({
 }
 
 const styles = StyleSheet.create({
+  headingActions: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
   flex: { flex: 1 },
   searchField: { paddingHorizontal: spacing.lg, marginBottom: spacing.sm },
   list: { paddingHorizontal: spacing.lg, gap: spacing.md },

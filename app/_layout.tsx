@@ -99,6 +99,8 @@ function RootNavigator() {
       <Stack.Screen name="provider/[id]" />
       <Stack.Screen name="booking/[id]" />
       <Stack.Screen name="chat/[id]" />
+      {/* The AI assistant. `?mode=listing` switches it to drafting listing copy. */}
+      <Stack.Screen name="assistant" />
       <Stack.Screen name="trip/[id]" />
       {/* Sheet-style presentations for the flows that interrupt browsing. */}
       <Stack.Screen name="checkout" options={{ presentation: 'modal', animation: 'slide_from_bottom' }} />

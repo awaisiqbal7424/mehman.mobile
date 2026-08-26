@@ -285,6 +285,12 @@ export default function ProfileScreen() {
             label="Build a custom trip"
             onPress={() => router.push('/trip-builder')}
           />
+          <Divider style={styles.menuDivider} />
+          <MenuRow
+            icon="chatbubble-ellipses-outline"
+            label="Ask TravelBuddy"
+            onPress={() => router.push('/assistant')}
+          />
         </Card>
       </View>
 
