@@ -12,7 +12,8 @@ import {
   Avatar, Badge, Button, Card, Divider, EmptyState, ErrorState, FooterBar, IconButton,
   Loading, Rating, Row, Screen, Sheet, Stepper, Text, useToast,
 } from '../../src/components/ui';
-import { PLACEHOLDER_IMAGE, serviceFeeFor, SERVICE_FEE_LABEL, WEBSITE_URL } from '../../src/constants';
+import { PLACEHOLDER_IMAGE, WEBSITE_URL } from '../../src/constants';
+import { useSettingsStore, serviceFeeFor } from '../../src/store/settingsStore';
 import { useMessageHost } from '../../src/hooks/useMessageHost';
 import { useAuth } from '../../src/store/auth';
 import { useWishlist } from '../../src/store/wishlist';
@@ -48,6 +49,7 @@ export default function PackageDetailScreen() {
   const heroHeight = Math.min(HERO_MAX_HEIGHT, Math.max(HERO_MIN_HEIGHT, screenWidth * HERO_ASPECT));
 
   const user = useAuth((s) => s.user);
+  const feePercentage = useSettingsStore((s) => s.serviceFeePercentage);
   const saved = useWishlist((s) => Boolean(id && s.entries[id]));
   const toggleSaved = useWishlist((s) => s.toggle);
 
@@ -127,9 +129,9 @@ export default function PackageDetailScreen() {
   const quote = useMemo(() => {
     const units = slotBased ? guests : nights * 1;
     const subtotal = slotBased ? price * guests : price * nights;
-    const fee = serviceFeeFor(subtotal);
+    const fee = serviceFeeFor(subtotal, feePercentage);
     return { units, subtotal, fee, total: subtotal + fee };
-  }, [guests, nights, price, slotBased]);
+  }, [guests, nights, price, slotBased, feePercentage]);
 
   const readyToBook = slotBased ? Boolean(slot) : nights > 0;
 
@@ -538,7 +540,7 @@ export default function PackageDetailScreen() {
                   }
                   value={pkr(quote.subtotal)}
                 />
-                <Row label={`Service fee (${SERVICE_FEE_LABEL})`} value={pkr(quote.fee)} />
+                <Row label={`Service fee (${feePercentage}%)`} value={pkr(quote.fee)} />
                 <Divider style={styles.quoteDivider} />
                 <Row label="Total" value={pkr(quote.total)} strong />
               </View>

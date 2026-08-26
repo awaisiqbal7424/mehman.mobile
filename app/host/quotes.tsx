@@ -9,8 +9,8 @@ import {
   Badge, Button, Card, CardSkeleton, Divider, EmptyState, ErrorState, Header, Input,
   Notice, Row, Screen, Sheet, Text, TextArea, useToast,
 } from '../../src/components/ui';
-import { serviceFeeFor, SERVICE_FEE_LABEL } from '../../src/constants';
 import { useAuth } from '../../src/store/auth';
+import { useSettingsStore, serviceFeeFor } from '../../src/store/settingsStore';
 import { colors, spacing } from '../../src/theme';
 import type { CustomTrip } from '../../src/types';
 import { formatDateRange, formatShortDate, pkr, plural } from '../../src/utils/format';
@@ -29,6 +29,7 @@ export default function HostQuotesScreen() {
   const toast = useToast();
   const queryClient = useQueryClient();
   const provider = useAuth((s) => s.provider);
+  const feePercentage = useSettingsStore((s) => s.serviceFeePercentage);
 
   const [quoting, setQuoting] = useState<CustomTrip | null>(null);
   const [price, setPrice] = useState('');
@@ -63,7 +64,7 @@ export default function HostQuotesScreen() {
     }
   };
 
-  const guestPays = price ? Number(price) + serviceFeeFor(Number(price)) : 0;
+  const guestPays = price ? Number(price) + serviceFeeFor(Number(price), feePercentage) : 0;
 
   const items = trips.data ?? [];
   const awaiting = items.filter((trip) => trip.status === 'SUBMITTED');
@@ -203,7 +204,7 @@ export default function HostQuotesScreen() {
         {price ? (
           <Card>
             <Row label="You receive" value={pkr(Number(price))} strong tone="success" />
-            <Row label={`Mehman service fee (${SERVICE_FEE_LABEL})`} value={pkr(serviceFeeFor(Number(price)))} />
+            <Row label={`Mehman service fee (${feePercentage}%)`} value={pkr(serviceFeeFor(Number(price), feePercentage))} />
             <Divider />
             <Row label="The guest pays" value={pkr(guestPays)} strong />
           </Card>

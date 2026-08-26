@@ -2,7 +2,8 @@ import { Ionicons } from '../../src/components/ui/LucideIcon';
 import { useRouter } from 'expo-router';
 import React from 'react';
 import { Linking, StyleSheet, View } from 'react-native';
-import { CONTACT_EMAIL, CONTACT_PHONE_DISPLAY, whatsAppUrl } from '../../src/constants';
+import { CONTACT_EMAIL } from '../../src/constants';
+import { useSettingsStore, buildWhatsAppUrl } from '../../src/store/settingsStore';
 import { Header, Screen, Text } from '../../src/components/ui';
 import { colors, radius, spacing } from '../../src/theme';
 
@@ -124,6 +125,8 @@ function Section({ title, children }: { title: string; children: React.ReactNode
 
 export default function CancellationPolicyScreen() {
   const router = useRouter();
+  const whatsAppNumber = useSettingsStore((s) => s.whatsAppNumber);
+  const contactPhoneDisplay = useSettingsStore((s) => s.contactPhoneDisplay);
 
   return (
     <Screen scroll>
@@ -246,11 +249,11 @@ export default function CancellationPolicyScreen() {
               variant="smallStrong"
               tone="primary"
               onPress={() =>
-                void Linking.openURL(whatsAppUrl('Hello Mehman, I have a question about a cancellation or refund'))
+                void Linking.openURL(buildWhatsAppUrl(whatsAppNumber, 'Hello Mehman, I have a question about a cancellation or refund'))
               }
               style={styles.contactLink}
             >
-              <Ionicons name="logo-whatsapp" size={14} color={colors.primary} /> WhatsApp {CONTACT_PHONE_DISPLAY}
+              <Ionicons name="logo-whatsapp" size={14} color={colors.primary} /> WhatsApp {contactPhoneDisplay}
             </Text>
           </View>
         </Section>

@@ -10,8 +10,9 @@ import {
   Button, Card, Divider, ErrorState, FooterBar, Header, Input, Loading, Notice, Row,
   Screen, Text, TextArea, useToast,
 } from '../src/components/ui';
-import { PLACEHOLDER_IMAGE, serviceFeeFor, SERVICE_FEE_LABEL } from '../src/constants';
+import { PLACEHOLDER_IMAGE } from '../src/constants';
 import { useAuth } from '../src/store/auth';
+import { useSettingsStore, serviceFeeFor } from '../src/store/settingsStore';
 import { colors, radius, spacing } from '../src/theme';
 import type { CouponValidation } from '../src/types';
 import { formatDateRange, formatTravelDate, nightsBetween, pkr, plural } from '../src/utils/format';
@@ -30,6 +31,7 @@ export default function CheckoutScreen() {
   const router = useRouter();
   const toast = useToast();
   const user = useAuth((s) => s.user);
+  const feePercentage = useSettingsStore((s) => s.serviceFeePercentage);
 
   const params = useLocalSearchParams<{
     packageId: string;
@@ -79,7 +81,7 @@ export default function CheckoutScreen() {
   );
 
   const subtotal = slotBased ? price * guests : price * nights;
-  const fee = serviceFeeFor(subtotal);
+  const fee = serviceFeeFor(subtotal, feePercentage);
   const discount = appliedCoupon?.valid ? (appliedCoupon.discountAmount ?? 0) : 0;
   const total = Math.max(0, subtotal + fee - discount);
 
@@ -323,7 +325,7 @@ export default function CheckoutScreen() {
             }
             value={pkr(subtotal)}
           />
-          <Row label={`Mehman service fee (${SERVICE_FEE_LABEL})`} value={pkr(fee)} />
+          <Row label={`Mehman service fee (${feePercentage}%)`} value={pkr(fee)} />
           {discount > 0 ? <Row label="Promo discount" value={`− ${pkr(discount)}`} /> : null}
           <Divider />
           <Row label="Total to pay" value={pkr(total)} strong />

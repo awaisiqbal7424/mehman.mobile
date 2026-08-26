@@ -6,13 +6,9 @@
 
 /* ── contact ──────────────────────────────────────────────────────────────── */
 
-export const CONTACT_PHONE_DISPLAY = '+92 336 5364506';
-
-/** wa.me wants digits only: country code, no plus, no leading zero, no spaces. */
-const WHATSAPP_NUMBER = '923365364506';
-
-export const whatsAppUrl = (message?: string): string =>
-  `https://wa.me/${WHATSAPP_NUMBER}${message ? `?text=${encodeURIComponent(message)}` : ''}`;
+// The WhatsApp number and its display form are admin-configurable now — see
+// src/store/settingsStore.ts (useSettingsStore + buildWhatsAppUrl). Changing
+// either from the Admin panel used to mean an app-store release.
 
 export const CONTACT_EMAIL = 'support@mehman.co';
 export const CONTACT_ADDRESS = 'Gilgit, GB, Pakistan';
@@ -33,19 +29,9 @@ export const WALLET_ACCOUNT = {
 
 export type PaymentMethodCode = 'WALLET';
 
-/**
- * Mehman's commission, charged to the guest on top of the host's price.
- *
- * Applied to the booking subtotal (the host's price for the nights or seats),
- * not to the running total — charging a percentage of a figure that already
- * contains the fee would be circular.
- */
-export const SERVICE_FEE_RATE = 0.02;
-
-export const serviceFeeFor = (subtotal: number): number => Math.round((subtotal || 0) * SERVICE_FEE_RATE);
-
-/** "2%" — kept next to the rate so the label cannot drift from the maths. */
-export const SERVICE_FEE_LABEL = `${(SERVICE_FEE_RATE * 100).toFixed(0)}%`;
+// Mehman's commission, charged to the guest on top of the host's price, is
+// admin-configurable now too — see src/store/settingsStore.ts
+// (useSettingsStore + serviceFeeFor).
 
 /* ── copy ─────────────────────────────────────────────────────────────────── */
 

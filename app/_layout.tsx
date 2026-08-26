@@ -8,6 +8,7 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { setSessionExpiredHandler } from '../src/api/client';
 import { ToastProvider } from '../src/components/ui';
 import { useAuth } from '../src/store/auth';
+import { useSettingsStore } from '../src/store/settingsStore';
 import { useWishlist } from '../src/store/wishlist';
 import { colors } from '../src/theme';
 
@@ -69,6 +70,9 @@ function RootNavigator() {
     });
 
     void bootstrap();
+    // The service fee and WhatsApp number an admin can change from the
+    // Admin panel — fetched once here so every screen reads the current value.
+    void useSettingsStore.getState().fetch();
   }, [bootstrap, clearWishlist, handleSessionExpired, router]);
 
   useEffect(() => {

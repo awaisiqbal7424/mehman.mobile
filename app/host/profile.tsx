@@ -11,8 +11,8 @@ import {
   Avatar, Badge, Button, Card, Chip, Divider, FooterBar, Header, Input, Notice, Screen, Text,
   TextArea, useToast,
 } from '../../src/components/ui';
-import { whatsAppUrl } from '../../src/constants';
 import { useAuth } from '../../src/store/auth';
+import { useSettingsStore, buildWhatsAppUrl } from '../../src/store/settingsStore';
 import { colors, radius, spacing } from '../../src/theme';
 import { formatCnic, formatMobile, isValidCnic, isValidMobile } from '../../src/utils/format';
 import { parseJsonArray } from '../../src/utils/packages';
@@ -275,6 +275,7 @@ export default function HostProfileScreen() {
  */
 function IdentityVerificationCard() {
   const toast = useToast();
+  const whatsAppNumber = useSettingsStore((s) => s.whatsAppNumber);
   const [cnic, setCnic] = useState('');
   const [front, setFront] = useState<ImagePicker.ImagePickerAsset | null>(null);
   const [back, setBack] = useState<ImagePicker.ImagePickerAsset | null>(null);
@@ -386,7 +387,7 @@ function IdentityVerificationCard() {
               size="sm"
               icon="logo-whatsapp"
               onPress={() =>
-                void Linking.openURL(whatsAppUrl(`Hello Mehman, here is my CNIC (${formatCnic(cnic)}) for verification.`))
+                void Linking.openURL(buildWhatsAppUrl(whatsAppNumber, `Hello Mehman, here is my CNIC (${formatCnic(cnic)}) for verification.`))
               }
             />
           }

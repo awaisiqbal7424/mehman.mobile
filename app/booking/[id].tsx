@@ -10,9 +10,10 @@ import {
   Badge, Button, Card, ConfirmSheet, Divider, ErrorState, Header, Loading, Notice, Row,
   Screen, Sheet, Text, TextArea, useToast,
 } from '../../src/components/ui';
-import { PLACEHOLDER_IMAGE, whatsAppUrl } from '../../src/constants';
+import { PLACEHOLDER_IMAGE } from '../../src/constants';
 import { useMessageHost } from '../../src/hooks/useMessageHost';
 import { useAuth } from '../../src/store/auth';
+import { useSettingsStore, buildWhatsAppUrl } from '../../src/store/settingsStore';
 import { colors, radius, spacing } from '../../src/theme';
 import { formatDateRange, formatTravelDate, pkr, plural } from '../../src/utils/format';
 import { BOOKING_STATUS, packageImages, typeLabel } from '../../src/utils/packages';
@@ -31,6 +32,7 @@ export default function BookingDetailScreen() {
   const toast = useToast();
   const queryClient = useQueryClient();
   const user = useAuth((s) => s.user);
+  const whatsAppNumber = useSettingsStore((s) => s.whatsAppNumber);
 
   const [cancelOpen, setCancelOpen] = useState(false);
   const [cancelling, setCancelling] = useState(false);
@@ -246,7 +248,7 @@ export default function BookingDetailScreen() {
               icon="logo-whatsapp"
               onPress={() =>
                 void Linking.openURL(
-                  whatsAppUrl(`Hello Mehman, I need help with booking ${String(id).slice(0, 8).toUpperCase()}.`),
+                  buildWhatsAppUrl(whatsAppNumber, `Hello Mehman, I need help with booking ${String(id).slice(0, 8).toUpperCase()}.`),
                 )
               }
             />

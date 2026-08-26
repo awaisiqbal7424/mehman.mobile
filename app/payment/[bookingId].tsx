@@ -12,7 +12,8 @@ import {
   Badge, Button, Card, Divider, ErrorState, FooterBar, Header, IconButton, Input,
   Loading, Notice, Row, Screen, Text, useToast,
 } from '../../src/components/ui';
-import { WALLET_ACCOUNT, whatsAppUrl } from '../../src/constants';
+import { WALLET_ACCOUNT } from '../../src/constants';
+import { useSettingsStore, buildWhatsAppUrl } from '../../src/store/settingsStore';
 import { colors, radius, spacing } from '../../src/theme';
 import { formatDateRange, formatTravelDate, pkr, plural } from '../../src/utils/format';
 
@@ -31,6 +32,7 @@ export default function PaymentScreen() {
   const { bookingId } = useLocalSearchParams<{ bookingId: string }>();
   const router = useRouter();
   const toast = useToast();
+  const whatsAppNumber = useSettingsStore((s) => s.whatsAppNumber);
 
   const [receipt, setReceipt] = useState<ImagePicker.ImagePickerAsset | null>(null);
   const [reference, setReference] = useState('');
@@ -168,7 +170,7 @@ export default function PaymentScreen() {
                   style={styles.noticeButton}
                   onPress={() =>
                     void Linking.openURL(
-                      whatsAppUrl(`Hello Mehman, here is my payment receipt for booking ${bookingId}.`),
+                      buildWhatsAppUrl(whatsAppNumber, `Hello Mehman, here is my payment receipt for booking ${bookingId}.`),
                     )
                   }
                 />
@@ -318,7 +320,7 @@ export default function PaymentScreen() {
               icon="logo-whatsapp"
               style={styles.noticeButton}
               onPress={() =>
-                void Linking.openURL(whatsAppUrl(`Hello Mehman, I need help paying for booking ${bookingId}.`))
+                void Linking.openURL(buildWhatsAppUrl(whatsAppNumber, `Hello Mehman, I need help paying for booking ${bookingId}.`))
               }
             />
           }

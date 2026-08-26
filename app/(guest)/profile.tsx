@@ -9,8 +9,9 @@ import {
   Avatar, Badge, Button, Card, ConfirmSheet, Divider, EmptyState, Input, Notice, PageHeading,
   Screen, Sheet, Text, useToast,
 } from '../../src/components/ui';
-import { CONTACT_EMAIL, whatsAppUrl } from '../../src/constants';
+import { CONTACT_EMAIL } from '../../src/constants';
 import { useAuth } from '../../src/store/auth';
+import { useSettingsStore, buildWhatsAppUrl } from '../../src/store/settingsStore';
 import { useWishlist } from '../../src/store/wishlist';
 import { colors, radius, spacing } from '../../src/theme';
 
@@ -35,6 +36,7 @@ export default function ProfileScreen() {
   const refreshAccount = useAuth((s) => s.refreshAccount);
   const refreshProviders = useAuth((s) => s.refreshProviders);
   const clearWishlist = useWishlist((s) => s.clear);
+  const whatsAppNumber = useSettingsStore((s) => s.whatsAppNumber);
 
   // A business approved (or rejected) while the app sat in the background —
   // or in a previous session that never logged back out — must not still
@@ -265,7 +267,7 @@ export default function ProfileScreen() {
               size="sm"
               icon="logo-whatsapp"
               style={styles.editButton}
-              onPress={() => void Linking.openURL(whatsAppUrl('Hello Mehman, about my Mezban application'))}
+              onPress={() => void Linking.openURL(buildWhatsAppUrl(whatsAppNumber, 'Hello Mehman, about my Mezban application'))}
             />
           </Card>
         ) : null}
@@ -318,7 +320,7 @@ export default function ProfileScreen() {
           <MenuRow
             icon="logo-whatsapp"
             label="Get help"
-            onPress={() => void Linking.openURL(whatsAppUrl('Hello Mehman, I need help with'))}
+            onPress={() => void Linking.openURL(buildWhatsAppUrl(whatsAppNumber, 'Hello Mehman, I need help with'))}
           />
           <Divider style={styles.menuDivider} />
           <MenuRow

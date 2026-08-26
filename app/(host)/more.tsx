@@ -8,8 +8,9 @@ import {
   Avatar, Badge, Button, Card, ConfirmSheet, Divider, PageHeading, Screen, Sheet,
   SheetOption, Text,
 } from '../../src/components/ui';
-import { CONTACT_EMAIL, whatsAppUrl } from '../../src/constants';
+import { CONTACT_EMAIL } from '../../src/constants';
 import { useAuth } from '../../src/store/auth';
+import { useSettingsStore, buildWhatsAppUrl } from '../../src/store/settingsStore';
 import { useWishlist } from '../../src/store/wishlist';
 import { colors, radius, spacing } from '../../src/theme';
 
@@ -31,6 +32,7 @@ export default function HostMoreScreen() {
   const setActiveProvider = useAuth((s) => s.setActiveProvider);
   const logout = useAuth((s) => s.logout);
   const clearWishlist = useWishlist((s) => s.clear);
+  const whatsAppNumber = useSettingsStore((s) => s.whatsAppNumber);
 
   const [signOutOpen, setSignOutOpen] = useState(false);
   const [switcherOpen, setSwitcherOpen] = useState(false);
@@ -162,7 +164,7 @@ export default function HostMoreScreen() {
           <MenuRow
             icon="logo-whatsapp"
             label="Host support"
-            onPress={() => void Linking.openURL(whatsAppUrl('Hello Mehman, I need help with my listings'))}
+            onPress={() => void Linking.openURL(buildWhatsAppUrl(whatsAppNumber, 'Hello Mehman, I need help with my listings'))}
           />
           <Divider style={styles.menuDivider} />
           <MenuRow
