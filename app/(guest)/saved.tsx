@@ -13,10 +13,13 @@ import type { ProviderPackage } from '../../src/types';
 /**
  * Saved listings.
  *
- * The wishlist endpoint returns rows, not listings, so each saved id is
- * resolved to its package here. Failures are dropped rather than thrown: a
- * listing that has since been unpublished should quietly disappear from the
- * list, not break the whole screen.
+ * The wishlist endpoint now attaches each saved package to its row, so the
+ * common path is a single request. Rows from an older API arrive without one
+ * and are still resolved by id, so the screen works either way.
+ *
+ * A package that no longer resolves is dropped rather than thrown: a listing
+ * that has since been unpublished should quietly disappear from the list, not
+ * break the whole screen.
  */
 export default function SavedScreen() {
   const router = useRouter();
@@ -32,12 +35,25 @@ export default function SavedScreen() {
     enabled: Boolean(user),
     queryFn: async (): Promise<ProviderPackage[]> => {
       const rows = await wishlistApi.mine(user!.id);
-      const ids = rows.map((row) => row.packageId).filter((id): id is string => Boolean(id));
+      const saved = rows.filter((row) => Boolean(row.packageId));
 
-      const results = await Promise.allSettled(ids.map((id) => packageApi.getById(id)));
-      return results
+      const attached = saved
+        .map((row) => row.package)
+        .filter((pkg): pkg is ProviderPackage => Boolean(pkg));
+
+      const unresolved = saved
+        .filter((row) => !row.package)
+        .map((row) => row.packageId!)
+        .filter((id, at, all) => all.indexOf(id) === at);
+
+      if (unresolved.length === 0) return attached;
+
+      const results = await Promise.allSettled(unresolved.map((id) => packageApi.getById(id)));
+      const fetched = results
         .filter((r): r is PromiseFulfilledResult<ProviderPackage> => r.status === 'fulfilled')
         .map((r) => r.value);
+
+      return [...attached, ...fetched];
     },
   });
 

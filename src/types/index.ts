@@ -377,6 +377,8 @@ export interface Wishlist {
   providerId?: string;
   provider?: ServiceProvider;
   packageId?: string;
+  /** Attached by the API for saved packages; absent if the package was deleted. */
+  package?: ProviderPackage;
   savedAt?: string;
 }
 

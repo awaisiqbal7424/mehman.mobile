@@ -404,7 +404,10 @@ const styles = StyleSheet.create({
   },
   categoryImage: { width: 80, height: 80 },
 
-  rail: { paddingHorizontal: spacing.lg },
+  // paddingVertical gives the card shadow somewhere to land: a rail with no
+  // vertical room clips the glow flat against the row on Android, where the
+  // elevation shadow is drawn inside the parent's bounds.
+  rail: { paddingHorizontal: spacing.lg, paddingVertical: spacing.sm },
   railEmpty: { paddingHorizontal: spacing.lg },
 
   destination: {

@@ -236,7 +236,7 @@ const styles = StyleSheet.create({
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: colors.border,
     overflow: 'hidden',
-    ...shadow.sm,
+    ...shadow.card,
   },
   rail: { width: RAIL_CARD_WIDTH },
   full: { width: '100%' },

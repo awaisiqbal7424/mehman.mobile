@@ -159,6 +159,18 @@ export const shadow = {
     android: { elevation: 8 },
     default: {},
   }),
+
+  /**
+   * Listing cards. A neutral grey drop under a warm card reads as a smudge, so
+   * this tints the shadow brand orange the way the web cards do. Android only
+   * honours shadowColor from API 28, and falls back to a plain elevation below
+   * that — the tint is a bonus, never the thing carrying the separation.
+   */
+  card: Platform.select({
+    ios: { shadowColor: palette.orange600, shadowOpacity: 0.18, shadowRadius: 16, shadowOffset: { width: 0, height: 6 } },
+    android: { elevation: 3, shadowColor: palette.orange600 },
+    default: {},
+  }),
 } as const;
 
 /** Anything tappable is at least this tall. Below 44pt, taps start missing. */
