@@ -202,7 +202,7 @@ export default function ProfileScreen() {
           <Notice
             tone="danger"
             icon="alert-circle-outline"
-            title="Could not check your host status"
+            title="Could not check your Mezban status"
             message={`${providersError} If you are already an approved Mezban, this is why the app is not showing your business — tap to try again.`}
             action={
               <Button
@@ -265,7 +265,7 @@ export default function ProfileScreen() {
               size="sm"
               icon="logo-whatsapp"
               style={styles.editButton}
-              onPress={() => void Linking.openURL(whatsAppUrl('Hello Mehman, about my host application'))}
+              onPress={() => void Linking.openURL(whatsAppUrl('Hello Mehman, about my Mezban application'))}
             />
           </Card>
         ) : null}
@@ -290,7 +290,7 @@ export default function ProfileScreen() {
         <View style={styles.section}>
           <Pressable
             accessibilityRole="button"
-            accessibilityLabel="Become a host"
+            accessibilityLabel="Become a Mezban"
             onPress={() => router.push('/host/onboarding')}
             style={({ pressed }) => [styles.becomeHost, pressed && { opacity: 0.94 }]}
           >

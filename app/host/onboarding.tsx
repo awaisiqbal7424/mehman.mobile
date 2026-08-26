@@ -121,7 +121,7 @@ export default function HostOnboardingScreen() {
   if (!user) {
     return (
       <Screen scroll padded>
-        <Header title="Become a host" onBack={() => router.back()} />
+        <Header title="Become a Mezban" onBack={() => router.back()} />
         <Notice
           tone="info"
           icon="person-outline"
@@ -143,14 +143,14 @@ export default function HostOnboardingScreen() {
   if (providerStatus !== 'none') {
     return (
       <Screen scroll padded>
-        <Header title="Become a host" onBack={() => router.back()} />
+        <Header title="Become a Mezban" onBack={() => router.back()} />
         <Notice
           tone={providerStatus === 'approved' ? 'success' : 'warning'}
           icon={providerStatus === 'approved' ? 'checkmark-circle-outline' : 'hourglass-outline'}
-          title={providerStatus === 'approved' ? 'You are already a host' : 'Your application is with us'}
+          title={providerStatus === 'approved' ? 'You are already a Mezban' : 'Your application is with us'}
           message={
             providerStatus === 'approved'
-              ? 'Switch to hosting from your profile to manage listings and bookings.'
+              ? 'Switch to Mezban from your profile to manage listings and bookings.'
               : 'We review new businesses within a couple of days and will let you know by email.'
           }
         />
