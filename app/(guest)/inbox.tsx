@@ -8,6 +8,7 @@ import {
   Screen, Text, useToast,
 } from '../../src/components/ui';
 import { Ionicons } from '../../src/components/ui/LucideIcon';
+import { useLiveInbox } from '../../src/hooks/useLiveInbox';
 import { useAuth } from '../../src/store/auth';
 import { useChats } from '../../src/store/chats';
 import { colors, spacing } from '../../src/theme';
@@ -17,10 +18,10 @@ import { formatRelative } from '../../src/utils/format';
 /**
  * Inbox — one row per host conversation.
  *
- * Polled on a one-minute interval rather than held open on a socket. The
- * conversation itself is live (see the chat screen); a list of who has written
- * does not need to be, and a background socket is an expensive thing to keep
- * alive on a phone that may be on 3G.
+ * Live over ChatHub's per-user group while the app is in the foreground, with
+ * the poll kept as a fallback for when the socket cannot connect. Waiting up to
+ * a minute to find out someone had replied was the single thing that made the
+ * inbox feel dead.
  */
 export default function InboxScreen() {
   const router = useRouter();
@@ -38,6 +39,8 @@ export default function InboxScreen() {
   useEffect(() => {
     void loadHidden();
   }, [loadHidden]);
+
+  useLiveInbox(Boolean(user));
 
   const conversations = useQuery({
     queryKey: ['conversations', user?.id],
@@ -57,7 +60,8 @@ export default function InboxScreen() {
     const list = (conversations.data ?? []).filter((c) => !isHidden(c.id, c.updatedAt ?? c.createdAt));
     const q = query.trim().toLowerCase();
     if (!q) return list;
-    return list.filter((conversation) => conversationName(conversation).toLowerCase().includes(q));
+    return list.filter((conversation) =>
+      `${conversationName(conversation)} ${conversation.lastMessage ?? ''}`.toLowerCase().includes(q));
   }, [conversations.data, isHidden, query]);
 
   const toggleSearch = () => {
@@ -133,7 +137,7 @@ export default function InboxScreen() {
             <ConversationRow
               key={conversation.id}
               conversation={conversation}
-              unread={unread.data?.byConversation?.[conversation.id] ?? 0}
+              unread={unread.data?.byConversation?.[conversation.id] ?? conversation.unread ?? 0}
               onPress={() => router.push(`/chat/${conversation.id}`)}
               onDelete={() => setDeleteTarget(conversation)}
             />
@@ -169,9 +173,12 @@ export default function InboxScreen() {
   );
 }
 
-/** The list endpoint does not join the provider, so the host's own name is
- * the best label available without a second request per row. */
+/** The list endpoint now resolves the other participant and falls back to the
+ * business name, so a row shows who you are actually talking to. The older
+ * shapes are kept as fallbacks so a stale cached payload still renders. */
 function conversationName(conversation: Conversation): string {
+  if (conversation.otherPartyName) return conversation.otherPartyName;
+  if (conversation.providerName) return conversation.providerName;
   return conversation.guest?.firstName
     ? `${conversation.guest.firstName} ${conversation.guest.lastName ?? ''}`.trim()
     : 'Host';
@@ -199,18 +206,20 @@ function ConversationRow({
           onPress={onPress}
           style={({ pressed }) => [styles.rowMain, pressed && { opacity: 0.85 }]}
         >
-          <Avatar uri={conversation.guest?.imageUrl} name={name} size={48} />
+          <Avatar uri={conversation.otherPartyImageUrl ?? conversation.guest?.imageUrl} name={name} size={48} />
           <View style={styles.rowBody}>
             <View style={styles.rowTop}>
               <Text variant="bodyStrong" numberOfLines={1} style={styles.flex}>
                 {name}
               </Text>
               <Text variant="small" tone="muted">
-                {formatRelative(conversation.updatedAt ?? conversation.createdAt)}
+                {formatRelative(conversation.lastMessageAt ?? conversation.updatedAt ?? conversation.createdAt)}
               </Text>
             </View>
             <Text variant="small" tone={unread > 0 ? 'default' : 'muted'} numberOfLines={1}>
-              {unread > 0 ? `${unread} new ${unread === 1 ? 'message' : 'messages'}` : 'Tap to open the conversation'}
+              {conversation.lastMessage
+                ? `${conversation.lastMessageMine ? 'You: ' : ''}${conversation.lastMessage}`
+                : 'Tap to open the conversation'}
             </Text>
           </View>
           {unread > 0 ? <View style={styles.dot} /> : null}

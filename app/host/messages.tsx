@@ -6,6 +6,7 @@ import { messageApi } from '../../src/api/services';
 import {
   Avatar, Card, CardSkeleton, EmptyState, ErrorState, Header, Screen, Text,
 } from '../../src/components/ui';
+import { useLiveInbox } from '../../src/hooks/useLiveInbox';
 import { colors, spacing } from '../../src/theme';
 import { formatRelative } from '../../src/utils/format';
 
@@ -18,6 +19,9 @@ import { formatRelative } from '../../src/utils/format';
  */
 export default function HostMessagesScreen() {
   const router = useRouter();
+
+  // Live over ChatHub's per-user group, with the poll kept as a fallback.
+  useLiveInbox(true);
 
   const conversations = useQuery({
     queryKey: ['host-conversations'],

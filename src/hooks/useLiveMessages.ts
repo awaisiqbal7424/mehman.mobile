@@ -4,7 +4,10 @@ import { AppState, type AppStateStatus } from 'react-native';
 import { API_BASE_URL, getToken } from '../api/client';
 import type { Message } from '../types';
 
-const HUB_URL = `${API_BASE_URL}/hubs/notifications`;
+// ChatHub, not NotificationHub. This pointed at /hubs/notifications, whose hub
+// class has no JoinConversation and never emits ReceiveMessage — so the invoke
+// below threw into a silent catch and no live message ever arrived.
+const HUB_URL = `${API_BASE_URL}/hubs/chat`;
 
 /**
  * Keeps one conversation live.

@@ -391,6 +391,16 @@ export interface Conversation {
   bookingId?: string;
   createdAt?: string;
   updatedAt?: string;
+  /** Whoever the caller is talking to — resolved server-side, so it is the host
+   * for a guest and the guest for a host, with no second request per row. */
+  otherPartyId?: string;
+  otherPartyName?: string;
+  otherPartyImageUrl?: string;
+  providerName?: string;
+  lastMessage?: string;
+  lastMessageAt?: string;
+  lastMessageMine?: boolean;
+  unread?: number;
 }
 
 export interface Message {

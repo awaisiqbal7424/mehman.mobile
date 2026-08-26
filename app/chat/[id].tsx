@@ -46,6 +46,18 @@ export default function ChatScreen() {
     refetchInterval: 20_000,
   });
 
+  // Who this is with. Read from the inbox list the guest already loaded rather
+  // than fetched again — a header that says "Conversation" tells you nothing,
+  // but it is not worth a request of its own.
+  const conversations = useQuery({
+    queryKey: ['conversations', user?.id],
+    queryFn: () => messageApi.conversations(user!.id),
+    enabled: Boolean(user),
+    staleTime: 60_000,
+  });
+  const conversation = conversations.data?.find((c) => c.id === id);
+  const title = conversation?.otherPartyName ?? conversation?.providerName ?? 'Conversation';
+
   const appendLive = useCallback(
     (message: Message) => {
       queryClient.setQueryData<Message[]>(['thread', id], (current) => {
@@ -54,6 +66,8 @@ export default function ChatScreen() {
         return [...current, message];
       });
       setPending((current) => current.filter((m) => m.content !== message.content));
+      // The row's preview and ordering come from the server, so let it recompute.
+      void queryClient.invalidateQueries({ queryKey: ['conversations'] });
     },
     [id, queryClient],
   );
@@ -93,6 +107,7 @@ export default function ChatScreen() {
       queryClient.setQueryData<Message[]>(['thread', id], (current) =>
         current ? [...current, saved] : [saved],
       );
+      void queryClient.invalidateQueries({ queryKey: ['conversations'] });
     } catch {
       setPending((current) => current.filter((m) => m.id !== optimistic.id));
       setDraft(content); // give them their words back rather than losing them
@@ -113,7 +128,7 @@ export default function ChatScreen() {
   return (
     <View style={styles.root}>
       <Header
-        title="Conversation"
+        title={title}
         onBack={() => (router.canGoBack() ? router.back() : router.replace('/(guest)/inbox'))}
       />
 
