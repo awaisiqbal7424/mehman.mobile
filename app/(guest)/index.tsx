@@ -8,11 +8,11 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { packageApi, providerApi, tripBuilderApi } from '../../src/api/services';
 import { PackageCard, RAIL_CARD_WIDTH } from '../../src/components/PackageCard';
 import {
-  CardSkeleton, IconButton, Rating, Screen, Section, Text,
+  CardSkeleton, IconButton, MehmanMark, Rating, Screen, Section, Text,
 } from '../../src/components/ui';
 import { PLACEHOLDER_IMAGE } from '../../src/constants';
 import { useAuth } from '../../src/store/auth';
-import { colors, radius, shadow, spacing } from '../../src/theme';
+import { colors, HIT_SLOP, MIN_TAP, radius, shadow, spacing } from '../../src/theme';
 import type { ProviderPackage, ServiceProvider, TripDestination } from '../../src/types';
 
 /**
@@ -95,6 +95,25 @@ export default function ExploreScreen() {
           </Text>
         </View>
         <View style={styles.topActions}>
+          {/*
+            TravelBuddy lives here as well as on the profile and in Chats, because those
+            two screens are replaced wholesale by a sign-in prompt when signed out — so
+            without this, a guest on the app had no way to reach it at all, while a guest
+            on the website gets it on every page. The assistant itself works fine without
+            an account; it just does not store anything.
+
+            The bare mark rather than a line icon in a chip: it is the brand's face, and
+            it is how TravelBuddy identifies itself on every screen it appears on.
+          */}
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Ask TravelBuddy"
+            hitSlop={HIT_SLOP}
+            onPress={() => router.push('/assistant')}
+            style={({ pressed }) => [styles.buddyButton, pressed && { opacity: 0.7 }]}
+          >
+            <MehmanMark size={30} tone="orange" />
+          </Pressable>
           <IconButton
             icon="notifications-outline"
             accessibilityLabel="Notifications"
@@ -366,6 +385,9 @@ const styles = StyleSheet.create({
   },
   greeting: { flex: 1, gap: 2 },
   topActions: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
+  // No chip behind the mark, so the tap target has to be declared rather than inherited
+  // from a background the other two header buttons happen to have.
+  buddyButton: { width: MIN_TAP, height: MIN_TAP, alignItems: 'center', justifyContent: 'center' },
 
   searchBar: {
     flexDirection: 'row',

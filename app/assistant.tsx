@@ -1,6 +1,5 @@
 import { Ionicons } from '../src/components/ui/LucideIcon';
 import { useQuery } from '@tanstack/react-query';
-import { Image } from 'expo-image';
 import * as Linking from 'expo-linking';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useCallback, useMemo, useRef, useState } from 'react';
@@ -9,7 +8,7 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { aiApi, AiError, MAX_MESSAGE_LENGTH, type AiLanguage, type AiMode, type AiTurn } from '../src/api/ai';
-import { EmptyState, Header, Text } from '../src/components/ui';
+import { EmptyState, Header, MehmanMark, Text } from '../src/components/ui';
 import { useSettingsStore, buildWhatsAppUrl } from '../src/store/settingsStore';
 import { colors, radius, shadow, spacing } from '../src/theme';
 
@@ -25,28 +24,6 @@ import { colors, radius, shadow, spacing } from '../src/theme';
  *   /assistant                  — travel guidance and Mehman questions
  *   /assistant?mode=listing     — helps a host draft listing copy
  */
-
-/**
- * The brand's square mark, used as TravelBuddy's face. The wordmark is ~4.4:1 and turns
- * to mush at this size; `assets/brand/` carries square marks for exactly this.
- * `accessibilityElementsHidden` because every place it appears already has a real label
- * on the control beside it.
- */
-function MehmanMark({ size, tone = 'white' }: { size: number; tone?: 'white' | 'orange' }) {
-  return (
-    <Image
-      source={
-        tone === 'white'
-          ? require('../assets/brand/mehman-mark-white-transparent.png')
-          : require('../assets/brand/mehman-mark-orange-transparent.png')
-      }
-      style={{ width: size, height: size }}
-      contentFit="contain"
-      accessibilityElementsHidden
-      importantForAccessibility="no"
-    />
-  );
-}
 
 interface ChatMessage extends AiTurn {
   id: string;
@@ -294,14 +271,6 @@ export default function AssistantScreen() {
           keyExtractor={(item) => item.id}
           keyboardDismissMode="interactive"
           contentContainerStyle={styles.thread}
-          ListHeaderComponent={
-            sending ? (
-              <View style={styles.typing}>
-                <ActivityIndicator size="small" color={colors.primary} />
-                <Text variant="small" tone="muted">{copy.thinking}</Text>
-              </View>
-            ) : null
-          }
           renderItem={({ item }) => {
             const mine = item.role === 'user';
             const rtl = item.language === 'ur';
@@ -351,36 +320,52 @@ export default function AssistantScreen() {
               </View>
             );
           }}
-          ListFooterComponent={
-            messages.length === 0 && !sending ? (
-              <View style={styles.empty}>
-                {/* Not `EmptyState` here: it takes an icon name, and this is the one
-                    screen where the brand mark itself should be the face. */}
-                <View style={styles.introBlock}>
-                  <MehmanMark size={56} tone="orange" />
-                  <Text variant="heading" center>
-                    {mode === 'listing' ? copy.listingEmptyTitle : copy.emptyTitle}
-                  </Text>
-                  <Text variant="body" tone="secondary" center style={styles.introBody}>
-                    {mode === 'listing' ? copy.listingEmptyBody : copy.emptyBody}
-                  </Text>
-                </View>
-                <View style={styles.suggestions}>
-                  {SUGGESTIONS[mode][language].map((suggestion) => (
-                    <Pressable
-                      key={suggestion}
-                      accessibilityRole="button"
-                      onPress={() => void send(suggestion)}
-                      style={({ pressed }) => [styles.suggestion, pressed && styles.suggestionPressed]}
-                    >
-                      <Text variant="small">{suggestion}</Text>
-                    </Pressable>
-                  ))}
-                </View>
-              </View>
-            ) : null
-          }
         />
+
+        {/*
+          The opening screen and the typing row sit OUTSIDE the list.
+
+          They used to be its ListFooterComponent and ListHeaderComponent, each carrying
+          `scaleY: -1` to undo the inverted list's flip — the pattern app/chat/[id].tsx
+          uses. That transform is not portable: react-native-web flips an inverted list
+          twice (the scroller and its content container), which already leaves children
+          upright, so the counter-flip rendered the whole opening screen upside down.
+          Rendering them as siblings needs no transform and is right on every platform.
+        */}
+        {messages.length === 0 && !sending ? (
+          <View style={styles.intro}>
+            {/* Not `EmptyState` here: it takes an icon name, and this is the one
+                screen where the brand mark itself should be the face. */}
+            <View style={styles.introBlock}>
+              <MehmanMark size={56} tone="orange" />
+              <Text variant="heading" center>
+                {mode === 'listing' ? copy.listingEmptyTitle : copy.emptyTitle}
+              </Text>
+              <Text variant="body" tone="secondary" center style={styles.introBody}>
+                {mode === 'listing' ? copy.listingEmptyBody : copy.emptyBody}
+              </Text>
+            </View>
+            <View style={styles.suggestions}>
+              {SUGGESTIONS[mode][language].map((suggestion) => (
+                <Pressable
+                  key={suggestion}
+                  accessibilityRole="button"
+                  onPress={() => void send(suggestion)}
+                  style={({ pressed }) => [styles.suggestion, pressed && styles.suggestionPressed]}
+                >
+                  <Text variant="small">{suggestion}</Text>
+                </Pressable>
+              ))}
+            </View>
+          </View>
+        ) : null}
+
+        {sending ? (
+          <View style={styles.typing}>
+            <ActivityIndicator size="small" color={colors.primary} />
+            <Text variant="small" tone="muted">{copy.thinking}</Text>
+          </View>
+        ) : null}
 
         {/* ── composer ────────────────────────────────────────────────── */}
         <View style={[styles.composer, { paddingBottom: Math.max(insets.bottom, spacing.md) }]}>
@@ -467,13 +452,18 @@ const styles = StyleSheet.create({
   },
 
   typing: {
-    // The list is inverted, so its header sits at the bottom — and so does this.
-    transform: [{ scaleY: -1 }],
     flexDirection: 'row', alignItems: 'center', gap: spacing.sm,
-    paddingVertical: spacing.md,
+    paddingHorizontal: spacing.lg, paddingBottom: spacing.md,
   },
 
-  empty: { transform: [{ scaleY: -1 }], gap: spacing.lg, paddingTop: spacing['2xl'] },
+  // Overlays the (empty) list rather than scrolling with it, so it stays centred and
+  // needs none of the inverted list's transform gymnastics.
+  intro: {
+    ...StyleSheet.absoluteFill,
+    justifyContent: 'center',
+    gap: spacing.xl,
+    paddingHorizontal: spacing.lg,
+  },
   introBlock: { alignItems: 'center', gap: spacing.md, paddingHorizontal: spacing.lg },
   // The mark sits above the heading with a little more air than the default gap, so it
   // reads as a mark rather than as part of the sentence.
