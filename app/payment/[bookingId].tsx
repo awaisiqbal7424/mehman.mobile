@@ -32,6 +32,7 @@ export default function PaymentScreen() {
   const { bookingId } = useLocalSearchParams<{ bookingId: string }>();
   const router = useRouter();
   const toast = useToast();
+  // Still used by the "need help paying?" prompt on the form itself.
   const whatsAppNumber = useSettingsStore((s) => s.whatsAppNumber);
 
   const [receipt, setReceipt] = useState<ImagePicker.ImagePickerAsset | null>(null);
@@ -39,8 +40,8 @@ export default function PaymentScreen() {
   const [receiptError, setReceiptError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [done, setDone] = useState(false);
-  /** True when the upload endpoint is not live and WhatsApp is the fallback. */
-  const [receiptPending, setReceiptPending] = useState(false);
+  /** The payment row, once created: a retry attaches to it instead of making another. */
+  const [paymentId, setPaymentId] = useState('');
 
   const booking = useQuery({
     queryKey: ['booking', bookingId],
@@ -100,24 +101,31 @@ export default function PaymentScreen() {
     setSubmitting(true);
     try {
       // PENDING until a human has checked the receipt. Nothing in this app
-      // marks a payment COMPLETED.
-      const payment = await paymentApi.create({
-        bookingId,
-        userId: booking.data.userId,
-        amount: total,
-        paymentMethod: 'WALLET',
-        status: 'PENDING',
-        currency: 'PKR',
-        transactionId: reference.trim() || undefined,
-      });
+      // marks a payment COMPLETED. A failed upload retries against the payment
+      // already created rather than making a second one.
+      let id = paymentId;
+      if (!id) {
+        const payment = await paymentApi.create({
+          bookingId,
+          userId: booking.data.userId,
+          amount: total,
+          paymentMethod: 'WALLET',
+          status: 'PENDING',
+          currency: 'PKR',
+          transactionId: reference.trim() || undefined,
+        });
+        id = payment.id;
+        setPaymentId(id);
+      }
 
-      const upload = await paymentApi.uploadReceipt(payment.id, {
+      // Attaching the screenshot is what makes the API email the bill, so the
+      // payment counts as submitted only once this succeeds.
+      await paymentApi.uploadReceipt(id, {
         uri: receipt.uri,
         name: receipt.fileName ?? `receipt-${bookingId}.jpg`,
         type: receipt.mimeType ?? 'image/jpeg',
       });
 
-      if (!upload.ok) setReceiptPending(true);
       setDone(true);
       toast.success('Payment submitted for verification');
     } catch (err) {
@@ -155,28 +163,14 @@ export default function PaymentScreen() {
             within a few hours.
           </Text>
 
-          {receiptPending ? (
-            <Notice
-              tone="warning"
-              icon="logo-whatsapp"
-              title="Send the screenshot to us as well"
-              message="Receipt uploads are not live yet, so please forward the screenshot on WhatsApp so we can verify it."
-              action={
-                <Button
-                  label="Send on WhatsApp"
-                  variant="secondary"
-                  size="sm"
-                  icon="logo-whatsapp"
-                  style={styles.noticeButton}
-                  onPress={() =>
-                    void Linking.openURL(
-                      buildWhatsAppUrl(whatsAppNumber, `Hello Mehman, here is my payment receipt for booking ${bookingId}.`),
-                    )
-                  }
-                />
-              }
-            />
-          ) : null}
+          <Notice
+            tone="info"
+            icon="mail-outline"
+            title="Your bill is on its way"
+            message={`We've emailed the receipt${
+              item.guestEmail ? ` to ${item.guestEmail}` : ''
+            }, and this trip now shows as awaiting verification.`}
+          />
 
           <Button
             label="View my bookings"

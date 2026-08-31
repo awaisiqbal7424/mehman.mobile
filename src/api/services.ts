@@ -394,29 +394,36 @@ export const paymentApi = {
     return data;
   },
   /**
-   * Attaches the guest's transfer screenshot to a payment.
+   * Stores the guest's transfer screenshot and attaches it to the payment.
    *
-   * The endpoint may not exist yet, so a 404/405 reports `notImplemented`
-   * rather than throwing — the screen then falls back to WhatsApp instead of
-   * silently dropping the receipt.
+   * Two steps, matching the web app: the bytes go to /api/upload/image, then
+   * the stored URL is attached to the payment row — which is also what makes
+   * the API email the guest their bill with the screenshot on it. This used to
+   * POST the file straight at the receipt route and fall back to WhatsApp when
+   * that 404'd; the route exists now and takes JSON, so a failure here is a
+   * real failure and throws.
    */
   async uploadReceipt(
     paymentId: string,
     file: { uri: string; name: string; type: string },
-  ): Promise<{ ok: boolean; notImplemented?: boolean }> {
+  ): Promise<string> {
     const body = new FormData();
     // React Native's FormData takes a {uri,name,type} descriptor, not a Blob.
-    body.append('receipt', file as unknown as Blob);
-    try {
-      await api.post(`/api/payments/${paymentId}/receipt`, body, {
-        headers: { 'Content-Type': 'multipart/form-data' },
-      });
-      return { ok: true };
-    } catch (err) {
-      const status = (err as { response?: { status?: number } })?.response?.status;
-      if (status === 404 || status === 405) return { ok: false, notImplemented: true };
-      return { ok: false };
-    }
+    body.append('file', file as unknown as Blob);
+
+    // Named explicitly because the client pins Content-Type: application/json —
+    // axios answers that on a FormData body by posting an empty JSON object,
+    // and the server replies "No file provided."
+    const { data } = await api.post('/api/upload/image', body, {
+      params: { entity: 'misc' },
+      headers: { 'Content-Type': 'multipart/form-data' },
+    });
+
+    const imageUrl: string | undefined = data?.imageUrl || data?.url;
+    if (!imageUrl) throw new Error('The server did not return an image URL');
+
+    await api.post(`/api/payments/${paymentId}/receipt`, { imageUrl });
+    return imageUrl;
   },
 };
 
@@ -449,9 +456,9 @@ export interface PayoutDetails {
  * back through the account rather than the original payment method.
  *
  * These endpoints may not exist on the API yet. The submit/save calls report
- * `notImplemented` on a 404/405 rather than throwing, the same way
- * `paymentApi.uploadReceipt` does — the screen can then fall back to
- * WhatsApp instead of claiming a submission succeeded.
+ * `notImplemented` on a 404/405 rather than throwing, so the screen can say so
+ * instead of claiming a submission succeeded. (Receipt uploads used to do the
+ * same; that route is live now and `paymentApi.uploadReceipt` throws.)
  */
 export const verificationApi = {
   async getVerification(): Promise<VerificationState> {
